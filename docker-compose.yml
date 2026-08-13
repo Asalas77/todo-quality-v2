@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: todoquality
+    ports:
+      # Alternativa por si no se usa el Postgres instalado en la máquina. Puerto distinto
+      # a propósito: con ambos escuchando en 5432 el cliente acaba hablando con el otro.
+      - '55432:5432'
+    volumes:
+      # Postgres ejecuta estos scripts en orden alfabético la primera vez que arranca.
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+      - todoquality_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d todoquality']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  todoquality_data:
