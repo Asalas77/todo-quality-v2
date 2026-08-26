@@ -8,7 +8,6 @@ import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { CentrosPage } from './pages/CentrosPage';
 import { PlantillasPage } from './pages/PlantillasPage';
-import { InspeccionesPage } from './pages/InspeccionesPage';
 import { CompletarInspeccionPage } from './pages/CompletarInspeccionPage';
 import { AgendaPage } from './pages/AgendaPage';
 import { UsuariosPage } from './pages/UsuariosPage';
@@ -143,14 +142,8 @@ export default function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/inspecciones"
-                element={
-                  <ProtectedRoute>
-                    <InspeccionesPage />
-                  </ProtectedRoute>
-                }
-              />
+              {/* Las inspecciones ahora viven dentro de Agenda (lista unificada + calendario). */}
+              <Route path="/inspecciones" element={<Navigate to="/agenda" replace />} />
               <Route
                 path="/inspecciones/:id"
                 element={

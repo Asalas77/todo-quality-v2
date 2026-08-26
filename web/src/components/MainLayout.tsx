@@ -21,7 +21,6 @@ import { Link as RouterLink, useLocation } from 'react-router-dom';
 import MenuIcon from '@mui/icons-material/Menu';
 import StoreIcon from '@mui/icons-material/Store';
 import AssignmentIcon from '@mui/icons-material/Assignment';
-import FactCheckIcon from '@mui/icons-material/FactCheck';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import PeopleIcon from '@mui/icons-material/People';
@@ -34,7 +33,6 @@ import { Logo } from './Logo';
 const NAV_ITEMS = [
   { to: '/centros', label: 'Centros', icon: StoreIcon, permission: null },
   { to: '/plantillas', label: 'Plantillas', icon: AssignmentIcon, permission: null },
-  { to: '/inspecciones', label: 'Inspecciones', icon: FactCheckIcon, permission: null },
   { to: '/agenda', label: 'Agenda', icon: CalendarMonthIcon, permission: null },
   { to: '/reportes', label: 'Reportes', icon: BarChartIcon, permission: 'reportes.ver' },
   { to: '/usuarios', label: 'Usuarios', icon: PeopleIcon, permission: 'usuarios.ver' },
