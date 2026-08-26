@@ -4,6 +4,7 @@ import { GetDashboardSummaryUseCase } from './application/get-dashboard-summary.
 import { GetDashboardTrendUseCase } from './application/get-dashboard-trend.use-case';
 import { GetConformidadPorCentroUseCase } from './application/get-conformidad-por-centro.use-case';
 import { GetHallazgosAbiertosUseCase } from './application/get-hallazgos-abiertos.use-case';
+import { GetFormulariosActividadUseCase } from './application/get-formularios-actividad.use-case';
 import { REPORTS_REPOSITORY } from './domain/ports/reports-repository.port';
 import { PostgresReportsRepository } from './infrastructure/postgres-reports.repository';
 
@@ -14,6 +15,7 @@ import { PostgresReportsRepository } from './infrastructure/postgres-reports.rep
     GetDashboardTrendUseCase,
     GetConformidadPorCentroUseCase,
     GetHallazgosAbiertosUseCase,
+    GetFormulariosActividadUseCase,
     { provide: REPORTS_REPOSITORY, useClass: PostgresReportsRepository },
   ],
 })

@@ -33,6 +33,19 @@ export interface OpenFinding {
   vencido: boolean;
 }
 
+/**
+ * Los formularios capturan datos libres, sin cumple/no cumple, así que se reportan por
+ * volumen completado — no entran en las métricas de conformidad.
+ */
+export interface FormulariosActividad {
+  totalRespuestas: number;
+  porFormulario: Array<{
+    formId: string;
+    formNombre: string;
+    respuestas: number;
+  }>;
+}
+
 export interface DateRangeFilter {
   desde: string;
   hasta: string;
@@ -52,5 +65,10 @@ export const reportesApi = {
   getHallazgosAbiertos: (centroId?: string) =>
     http
       .get<OpenFinding[]>('/reportes/hallazgos-abiertos', { params: { centroId } })
+      .then((r) => r.data),
+
+  getFormulariosActividad: (filter: DateRangeFilter) =>
+    http
+      .get<FormulariosActividad>('/reportes/formularios', { params: filter })
       .then((r) => r.data),
 };

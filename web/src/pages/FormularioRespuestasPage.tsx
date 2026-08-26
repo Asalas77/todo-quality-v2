@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -30,6 +30,35 @@ async function openArchivo(responseId: string, campoId: string) {
   });
   const url = URL.createObjectURL(data as Blob);
   window.open(url, '_blank');
+}
+
+function FotoThumbnail({ responseId, campoId }: { responseId: string; campoId: string }) {
+  const [src, setSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    http
+      .get(formulariosApi.archivoEndpoint(responseId, campoId), { responseType: 'blob' })
+      .then(({ data }) => {
+        objectUrl = URL.createObjectURL(data as Blob);
+        setSrc(objectUrl);
+      })
+      .catch(() => setSrc(null));
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [responseId, campoId]);
+
+  if (!src) return <CircularProgress size={20} />;
+  return (
+    <Box
+      component="img"
+      src={src}
+      alt="Foto adjunta"
+      onClick={() => window.open(src, '_blank')}
+      sx={{ maxWidth: 200, maxHeight: 200, borderRadius: 1, cursor: 'pointer', display: 'block' }}
+    />
+  );
 }
 
 export function FormularioRespuestasPage() {
@@ -111,7 +140,9 @@ export function FormularioRespuestasPage() {
               {responseDetail.valores.map((valor) => (
                 <Box key={valor.campoId}>
                   <Typography variant="subtitle2">{valor.campoEtiqueta}</Typography>
-                  {valor.campoTipo === 'ARCHIVO' && valor.archivoUrl ? (
+                  {valor.campoTipo === 'FOTO' && valor.archivoUrl ? (
+                    <FotoThumbnail responseId={responseDetail.id} campoId={valor.campoId} />
+                  ) : valor.campoTipo === 'ARCHIVO' && valor.archivoUrl ? (
                     <Button
                       size="small"
                       onClick={() => openArchivo(responseDetail.id, valor.campoId)}

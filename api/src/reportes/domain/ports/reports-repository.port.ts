@@ -39,10 +39,24 @@ export interface OpenFinding {
   vencido: boolean;
 }
 
+/**
+ * Los formularios capturan datos libres, sin noción de cumple/no cumple, así que no entran
+ * en las métricas de conformidad — se reportan aparte, por volumen completado.
+ */
+export interface FormulariosActividad {
+  totalRespuestas: number;
+  porFormulario: Array<{
+    formId: string;
+    formNombre: string;
+    respuestas: number;
+  }>;
+}
+
 export interface ReportsRepositoryPort {
   getSummary(filter: DateRangeFilter): Promise<DashboardSummary>;
   getTrend(filter: DateRangeFilter): Promise<TrendPoint[]>;
   getConformidadPorCentro(filter: DateRangeFilter): Promise<CentroConformidad[]>;
   /** No se filtra por rango de fechas: un hallazgo abierto de hace meses sigue siendo relevante hoy. */
   getHallazgosAbiertos(centroId?: string): Promise<OpenFinding[]>;
+  getFormulariosActividad(filter: DateRangeFilter): Promise<FormulariosActividad>;
 }

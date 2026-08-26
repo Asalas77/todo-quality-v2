@@ -1,4 +1,4 @@
-# Base de datos — TO DO QUALITY
+# Base de datos — Kontrol
 
 PostgreSQL con aislamiento multitenant por Row Level Security. Probado en 16 y 18.
 

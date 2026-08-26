@@ -37,6 +37,7 @@ export class AgendaController {
   create(@Body() dto: CreateScheduleDto, @Req() req: RequestWithUser) {
     return this.createSchedule.execute({
       templateId: dto.templateId,
+      formId: dto.formId,
       centroId: dto.centroId,
       fecha: dto.fecha,
       asunto: dto.asunto ?? null,

@@ -1,3 +1,5 @@
+import type { ChecklistFrequency } from '../../../plantillas/domain/ports/checklist-template-repository.port';
+
 export const FORM_REPOSITORY = Symbol('FORM_REPOSITORY');
 
 export type FormFieldType =
@@ -7,7 +9,8 @@ export type FormFieldType =
   | 'RADIO'
   | 'CHECKBOX'
   | 'DESPLEGABLE'
-  | 'ARCHIVO';
+  | 'ARCHIVO'
+  | 'FOTO';
 
 export interface FormField {
   id: string;
@@ -20,8 +23,10 @@ export interface FormField {
 
 export interface FormSummary {
   id: string;
+  identificador: string;
   nombre: string;
   descripcion: string | null;
+  frecuencia: ChecklistFrequency;
   activo: boolean;
   fieldCount: number;
   createdAt: Date;
@@ -40,19 +45,22 @@ export interface FormFieldInput {
 }
 
 export interface FormInput {
+  identificador: string;
   nombre: string;
   descripcion?: string;
+  frecuencia: ChecklistFrequency;
   fields: FormFieldInput[];
 }
 
 export interface FormRepositoryPort {
   findAll(includeInactive: boolean): Promise<FormSummary[]>;
   findById(id: string): Promise<Form | null>;
+  /** Lanza DuplicateIdentificadorError si ya existe un formulario con ese identificador. */
   create(input: FormInput, createdBy: string): Promise<Form>;
   /**
    * Reemplaza los campos y la lista completa (se borran los anteriores y se insertan los
    * nuevos) — mismo criterio que las plantillas de checklist: no hay edición granular.
-   * Lanza FormNotFoundError si el id no existe en el tenant.
+   * Lanza FormNotFoundError o DuplicateIdentificadorError.
    */
   update(id: string, input: FormInput): Promise<Form>;
   /** Lanza FormNotFoundError si el id no existe en el tenant. */
@@ -62,5 +70,11 @@ export interface FormRepositoryPort {
 export class FormNotFoundError extends Error {
   constructor() {
     super('El formulario no existe');
+  }
+}
+
+export class DuplicateIdentificadorError extends Error {
+  constructor() {
+    super('Ya existe un formulario con ese identificador');
   }
 }

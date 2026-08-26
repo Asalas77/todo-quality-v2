@@ -24,10 +24,12 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import type { FormDetail, FormFieldType, FormInput } from '../api/formularios';
 import { FIELD_TYPE_LABEL, OPTION_FIELD_TYPES } from '../api/formularios';
+import type { ChecklistFrequency } from '../api/plantillas';
+import { FRECUENCIA_LABEL } from '../api/plantillas';
 
 const fieldSchema = z
   .object({
-    tipo: z.enum(['TEXTO_CORTO', 'TEXTO_LARGO', 'FECHA', 'RADIO', 'CHECKBOX', 'DESPLEGABLE', 'ARCHIVO']),
+    tipo: z.enum(['TEXTO_CORTO', 'TEXTO_LARGO', 'FECHA', 'RADIO', 'CHECKBOX', 'DESPLEGABLE', 'ARCHIVO', 'FOTO']),
     etiqueta: z.string().min(1, 'Obligatoria').max(300),
     requerido: z.boolean(),
     opcionesText: z.string(),
@@ -40,8 +42,10 @@ const fieldSchema = z
   );
 
 const schema = z.object({
+  identificador: z.string().min(1, 'Obligatorio').max(50),
   nombre: z.string().min(2, 'Obligatorio').max(150),
   descripcion: z.string().max(1000).optional(),
+  frecuencia: z.enum(['DIARIO', 'SEMANAL', 'BIMESTRAL', 'TRIMESTRAL']),
   fields: z.array(fieldSchema).min(1, 'Agrega al menos un campo'),
 });
 
@@ -56,8 +60,10 @@ const EMPTY_FIELD = {
 
 function toFormInput(values: FormValues): FormInput {
   return {
+    identificador: values.identificador,
     nombre: values.nombre,
     descripcion: values.descripcion || undefined,
+    frecuencia: values.frecuencia,
     fields: values.fields.map((field) => ({
       tipo: field.tipo,
       etiqueta: field.etiqueta,
@@ -91,8 +97,10 @@ export function FormBuilderDialog({ open, form, onClose, onSubmit }: FormBuilder
   useEffect(() => {
     if (open) {
       reset({
+        identificador: form?.identificador ?? '',
         nombre: form?.nombre ?? '',
         descripcion: form?.descripcion ?? '',
+        frecuencia: form?.frecuencia ?? 'DIARIO',
         fields: form?.fields.map((f) => ({
           tipo: f.tipo,
           etiqueta: f.etiqueta,
@@ -113,6 +121,31 @@ export function FormBuilderDialog({ open, form, onClose, onSubmit }: FormBuilder
       <form onSubmit={submit} noValidate>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
+            <Stack direction="row" spacing={2}>
+              <TextField
+                label="Identificador"
+                placeholder="REC-01"
+                fullWidth
+                error={!!errors.identificador}
+                helperText={errors.identificador?.message}
+                {...register('identificador')}
+              />
+              <FormControl fullWidth error={!!errors.frecuencia}>
+                <InputLabel id="form-frecuencia-label">Frecuencia</InputLabel>
+                <Select
+                  labelId="form-frecuencia-label"
+                  label="Frecuencia"
+                  defaultValue={form?.frecuencia ?? 'DIARIO'}
+                  {...register('frecuencia')}
+                >
+                  {(Object.keys(FRECUENCIA_LABEL) as ChecklistFrequency[]).map((f) => (
+                    <MenuItem key={f} value={f}>
+                      {FRECUENCIA_LABEL[f]}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
             <TextField
               label="Nombre"
               error={!!errors.nombre}

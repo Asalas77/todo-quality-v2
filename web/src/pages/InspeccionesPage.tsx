@@ -38,7 +38,8 @@ const ESTADO_COLOR: Record<InspectionStatus, 'default' | 'success' | 'error'> = 
 
 export function InspeccionesPage() {
   const { hasPermission } = useAuth();
-  const canComplete = hasPermission('inspecciones.completar');
+  const canComplete =
+    hasPermission('inspecciones.completar') || hasPermission('formularios.completar');
   const navigate = useNavigate();
 
   const [estadoFilter, setEstadoFilter] = useState<InspectionStatus | ''>('');
@@ -72,7 +73,7 @@ export function InspeccionesPage() {
               startIcon={<AddIcon />}
               onClick={() => setDialogOpen(true)}
             >
-              Nueva inspección
+              Nueva inspección o formulario
             </Button>
           )}
         </Stack>

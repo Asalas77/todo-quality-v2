@@ -22,11 +22,19 @@ import { CreateFormUseCase } from '../application/create-form.use-case';
 import { UpdateFormUseCase } from '../application/update-form.use-case';
 import { SetFormActivoUseCase } from '../application/set-form-activo.use-case';
 import { SubmitFormResponseUseCase } from '../application/submit-form-response.use-case';
+import { SaveFormDraftUseCase } from '../application/save-form-draft.use-case';
+import { GetFormDraftUseCase } from '../application/get-form-draft.use-case';
 import { ListFormResponsesUseCase } from '../application/list-form-responses.use-case';
 import { GetFormResponseUseCase } from '../application/get-form-response.use-case';
 import { FORM_RESPONSE_REPOSITORY, FormResponseRepositoryPort } from '../domain/ports/form-response-repository.port';
 import { FormFileStorage } from './form-file-storage';
-import { CreateFormDto, SetFormActivoDto, SubmitFormResponseDto, UpdateFormDto } from './dto/form.dto';
+import {
+  CreateFormDto,
+  SaveFormDraftDto,
+  SetFormActivoDto,
+  SubmitFormResponseDto,
+  UpdateFormDto,
+} from './dto/form.dto';
 import { RequirePermissions } from '../../auth/infrastructure/decorators/require-permissions.decorator';
 import { RequestWithUser } from '../../auth/infrastructure/tenant-context.middleware';
 import { requireTenantId } from '../../shared/tenant/tenant-context';
@@ -42,6 +50,8 @@ export class FormulariosController {
     private readonly updateForm: UpdateFormUseCase,
     private readonly setFormActivo: SetFormActivoUseCase,
     private readonly submitResponse: SubmitFormResponseUseCase,
+    private readonly saveFormDraft: SaveFormDraftUseCase,
+    private readonly getFormDraft: GetFormDraftUseCase,
     private readonly listResponses: ListFormResponsesUseCase,
     private readonly getResponse: GetFormResponseUseCase,
     private readonly fileStorage: FormFileStorage,
@@ -90,7 +100,30 @@ export class FormulariosController {
       centroId: dto.centroId,
       creadoPor: req.user!.userId,
       valores: dto.valores,
+      scheduleId: dto.scheduleId,
     });
+  }
+
+  @RequirePermissions('formularios.completar')
+  @Post(':id/borrador')
+  saveDraft(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SaveFormDraftDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.saveFormDraft.execute({
+      formId: id,
+      centroId: dto.centroId,
+      creadoPor: req.user!.userId,
+      valores: dto.valores,
+    });
+  }
+
+  /** Devuelve el borrador vigente del usuario autenticado para este formulario, o null. */
+  @RequirePermissions('formularios.completar')
+  @Get(':id/borrador')
+  getDraft(@Param('id', ParseUUIDPipe) id: string, @Req() req: RequestWithUser) {
+    return this.getFormDraft.execute(id, req.user!.userId);
   }
 
   @RequirePermissions('formularios.ver')

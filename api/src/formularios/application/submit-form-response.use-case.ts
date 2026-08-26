@@ -6,12 +6,18 @@ import {
   FormResponseRepositoryPort,
   FormResponseValueInput,
 } from '../domain/ports/form-response-repository.port';
+import {
+  SCHEDULE_REPOSITORY,
+  ScheduleRepositoryPort,
+} from '../../agenda/domain/ports/schedule-repository.port';
 
 export interface SubmitFormResponseCommand {
   formId: string;
   centroId?: string;
   creadoPor: string;
   valores: FormResponseValueInput[];
+  /** Presente cuando la respuesta nace de una programación de agenda, para cerrarla. */
+  scheduleId?: string;
 }
 
 @Injectable()
@@ -19,6 +25,7 @@ export class SubmitFormResponseUseCase {
   constructor(
     @Inject(FORM_REPOSITORY) private readonly forms: FormRepositoryPort,
     @Inject(FORM_RESPONSE_REPOSITORY) private readonly responses: FormResponseRepositoryPort,
+    @Inject(SCHEDULE_REPOSITORY) private readonly schedules: ScheduleRepositoryPort,
   ) {}
 
   async execute(command: SubmitFormResponseCommand): Promise<FormResponseDetail> {
@@ -38,11 +45,24 @@ export class SubmitFormResponseUseCase {
       );
     }
 
-    return this.responses.submit({
+    const respuesta = await this.responses.submit({
       formId: command.formId,
       centroId: command.centroId,
       creadoPor: command.creadoPor,
       valores: command.valores,
     });
+
+    if (command.scheduleId) {
+      // La respuesta ya quedó guardada: si cerrar la programación falla (por ejemplo, otro
+      // usuario la canceló mientras se completaba), no se pierde lo que la persona escribió.
+      // Mismo criterio que StartInspectionFromSchedule: dos transacciones, no una.
+      try {
+        await this.schedules.markFormSubmitted(command.scheduleId, respuesta.id);
+      } catch {
+        // Silencioso a propósito: la programación queda pendiente y se puede cerrar a mano.
+      }
+    }
+
+    return respuesta;
   }
 }

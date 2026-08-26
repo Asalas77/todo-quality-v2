@@ -22,7 +22,9 @@ import {
 function buildSchedule(overrides: Partial<Schedule> = {}): Schedule {
   return {
     id: 'sched-1',
+    tipo: 'CHECKLIST',
     templateId: 'tpl-1',
+    formId: null,
     templateNombre: 'Higiene diaria',
     centroId: 'centro-1',
     centroNombre: 'Planta Norte',
@@ -32,6 +34,7 @@ function buildSchedule(overrides: Partial<Schedule> = {}): Schedule {
     fecha: '2026-02-01',
     estado: 'PENDIENTE',
     inspectionId: null,
+    formRespuestaId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
@@ -74,6 +77,15 @@ class FakeScheduleRepo implements ScheduleRepositoryPort {
     if (schedule.estado !== 'PENDIENTE') throw new ScheduleNotPendingError();
     schedule.estado = 'COMPLETADA';
     schedule.inspectionId = inspectionId;
+    return schedule;
+  }
+
+  async markFormSubmitted(id: string, formRespuestaId: string) {
+    const schedule = this.items.find((s) => s.id === id);
+    if (!schedule) throw new ScheduleNotFoundError();
+    if (schedule.estado !== 'PENDIENTE') throw new ScheduleNotPendingError();
+    schedule.estado = 'COMPLETADA';
+    schedule.formRespuestaId = formRespuestaId;
     return schedule;
   }
 }

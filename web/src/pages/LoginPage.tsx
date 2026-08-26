@@ -5,21 +5,34 @@ import { z } from 'zod';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Alert,
-  Box,
   Button,
   Card,
   CardContent,
+  IconButton,
+  InputAdornment,
   Link,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useAuth } from '../context/AuthContext';
+import { AuthBackground } from '../components/AuthBackground';
 import { AxiosError } from 'axios';
 
 const schema = z.object({
-  email: z.string().email('Correo electrónico inválido'),
-  password: z.string().min(1, 'La contraseña es obligatoria'),
+  email: z
+    .string()
+    .trim()
+    .min(1, 'El correo electrónico es obligatorio')
+    .max(255, 'El correo electrónico es demasiado largo')
+    .email('Ingresa un correo electrónico válido'),
+  password: z
+    .string()
+    .min(1, 'La contraseña es obligatoria')
+    .max(200, 'La contraseña es demasiado larga')
+    .refine((value) => value.trim().length > 0, 'La contraseña no puede ser solo espacios en blanco'),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -29,6 +42,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -56,26 +70,18 @@ export function LoginPage() {
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        minHeight: '100vh',
-        alignItems: 'center',
-        justifyContent: 'center',
-        bgcolor: 'grey.100',
-      }}
-    >
-      <Card sx={{ width: 400, p: 2 }}>
+    <AuthBackground>
+      <Card sx={{ width: 400, p: 2, borderRadius: 3, boxShadow: '0 8px 32px rgba(15, 23, 42, 0.08)' }}>
         <CardContent>
           <Typography variant="h5" component="h1" sx={{ textAlign: 'center' }} gutterBottom>
-            TO DO QUALITY
+            Bienvenido de nuevo
           </Typography>
           <Typography
             variant="body2"
             color="text.secondary"
             sx={{ textAlign: 'center', mb: 3 }}
           >
-            Inicio de sesión
+            Inicia sesión para continuar
           </Typography>
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -93,15 +99,37 @@ export function LoginPage() {
                 autoComplete="username"
                 error={!!errors.email}
                 helperText={errors.email?.message}
+                slotProps={{ htmlInput: { maxLength: 255 } }}
                 {...register('email')}
               />
 
               <TextField
                 label="Contraseña"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
                 error={!!errors.password}
                 helperText={errors.password?.message}
+                slotProps={{
+                  htmlInput: { maxLength: 200 },
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          edge="end"
+                          size="small"
+                          aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                        >
+                          {showPassword ? (
+                            <VisibilityOffIcon fontSize="small" />
+                          ) : (
+                            <VisibilityIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
                 {...register('password')}
               />
 
@@ -125,6 +153,6 @@ export function LoginPage() {
           </form>
         </CardContent>
       </Card>
-    </Box>
+    </AuthBackground>
   );
 }

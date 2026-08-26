@@ -72,6 +72,11 @@ export function ReportesPage() {
     queryFn: () => reportesApi.getHallazgosAbiertos(centroId || undefined),
   });
 
+  const formulariosQuery = useQuery({
+    queryKey: ['reportes-formularios', filter],
+    queryFn: () => reportesApi.getFormulariosActividad(filter),
+  });
+
   const summary = summaryQuery.data;
 
   return (
@@ -169,6 +174,52 @@ export function ReportesPage() {
             <CentroConformidadCard data={centrosQuery.data ?? []} isLoading={centrosQuery.isLoading} />
           </Grid>
         </Grid>
+
+        <Card>
+          <CardContent>
+            <Stack
+              direction="row"
+              sx={{ alignItems: 'baseline', justifyContent: 'space-between', mb: 1 }}
+            >
+              <Typography variant="subtitle1">Formularios completados</Typography>
+              <Typography variant="h5" color="secondary.main">
+                {formulariosQuery.isLoading
+                  ? '—'
+                  : (formulariosQuery.data?.totalRespuestas ?? 0)}
+              </Typography>
+            </Stack>
+            <Typography variant="caption" color="text.secondary">
+              Los formularios registran datos libres, sin cumple/no cumple, así que no
+              entran en la conformidad.
+            </Typography>
+            {formulariosQuery.isLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                <CircularProgress size={24} />
+              </Box>
+            ) : (formulariosQuery.data?.porFormulario ?? []).length === 0 ? (
+              <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+                No se completaron formularios en este período.
+              </Typography>
+            ) : (
+              <Table size="small" sx={{ mt: 1.5 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Formulario</TableCell>
+                    <TableCell align="right">Respuestas</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(formulariosQuery.data?.porFormulario ?? []).map((f) => (
+                    <TableRow key={f.formId} hover>
+                      <TableCell>{f.formNombre}</TableCell>
+                      <TableCell align="right">{f.respuestas}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardContent>

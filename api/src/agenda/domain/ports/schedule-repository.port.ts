@@ -2,9 +2,17 @@ export const SCHEDULE_REPOSITORY = Symbol('SCHEDULE_REPOSITORY');
 
 export type ScheduleStatus = 'PENDIENTE' | 'COMPLETADA' | 'CANCELADA';
 
+/** Lo agendado es una plantilla de checklist o un formulario, nunca ambos. */
+export type ScheduleTargetType = 'CHECKLIST' | 'FORMULARIO';
+
 export interface Schedule {
   id: string;
-  templateId: string;
+  tipo: ScheduleTargetType;
+  /** Null cuando tipo === 'FORMULARIO'. */
+  templateId: string | null;
+  /** Null cuando tipo === 'CHECKLIST'. */
+  formId: string | null;
+  /** Nombre de la plantilla o del formulario, según el tipo. */
   templateNombre: string;
   centroId: string;
   centroNombre: string;
@@ -14,12 +22,15 @@ export interface Schedule {
   fecha: string;
   estado: ScheduleStatus;
   inspectionId: string | null;
+  formRespuestaId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface CreateScheduleInput {
-  templateId: string;
+  /** Exactamente uno de templateId / formId. */
+  templateId?: string;
+  formId?: string;
   centroId: string;
   asignadoA: string;
   asunto: string | null;
@@ -44,6 +55,11 @@ export interface ScheduleRepositoryPort {
    * Lanza ScheduleNotFoundError o ScheduleNotPendingError.
    */
   markStarted(id: string, inspectionId: string): Promise<Schedule>;
+  /**
+   * Equivalente a markStarted para lo agendado de tipo FORMULARIO: enlaza la respuesta
+   * recién enviada y marca COMPLETADA.
+   */
+  markFormSubmitted(id: string, formRespuestaId: string): Promise<Schedule>;
   /** Necesario para que el caso de uso valide el estado antes de iniciar la inspección. */
   findById(id: string): Promise<Schedule | null>;
 }
@@ -69,5 +85,16 @@ export class ScheduleTemplateInactiveError extends Error {
 export class ScheduleCentroInactiveError extends Error {
   constructor() {
     super('El centro seleccionado no está activo');
+  }
+}
+
+/** Iniciar una inspección solo aplica a lo agendado de tipo CHECKLIST. */
+export class ScheduleWrongTargetTypeError extends Error {
+  constructor(esperado: ScheduleTargetType) {
+    super(
+      esperado === 'CHECKLIST'
+        ? 'Esta programación es de un formulario, no de un checklist'
+        : 'Esta programación es de un checklist, no de un formulario',
+    );
   }
 }

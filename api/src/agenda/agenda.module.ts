@@ -18,5 +18,8 @@ import { InspeccionesModule } from '../inspecciones/inspecciones.module';
     StartInspectionFromScheduleUseCase,
     { provide: SCHEDULE_REPOSITORY, useClass: PostgresScheduleRepository },
   ],
+  // FormulariosModule lo usa para cerrar una programación de tipo FORMULARIO al enviar
+  // la respuesta. Agenda no depende de Formularios, así que no hay ciclo.
+  exports: [SCHEDULE_REPOSITORY],
 })
 export class AgendaModule {}

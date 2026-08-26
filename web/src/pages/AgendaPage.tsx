@@ -22,6 +22,8 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CancelIcon from '@mui/icons-material/Cancel';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import DescriptionIcon from '@mui/icons-material/Description';
 import { AxiosError } from 'axios';
 import { MainLayout } from '../components/MainLayout';
 import { CreateScheduleDialog } from '../components/CreateScheduleDialog';
@@ -39,6 +41,7 @@ export function AgendaPage() {
   const { hasPermission } = useAuth();
   const canManage = hasPermission('agenda.gestionar');
   const canStart = hasPermission('inspecciones.completar');
+  const canCompleteForms = hasPermission('formularios.completar');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -78,7 +81,7 @@ export function AgendaPage() {
           <Typography variant="h5">Agenda</Typography>
           {canManage && (
             <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialogOpen(true)}>
-              Programar inspección
+              Programar
             </Button>
           )}
         </Stack>
@@ -104,6 +107,7 @@ export function AgendaPage() {
           <TableHead>
             <TableRow>
               <TableCell>Fecha</TableCell>
+              <TableCell>Tipo</TableCell>
               <TableCell>Plantilla</TableCell>
               <TableCell>Centro</TableCell>
               <TableCell>Asignado a</TableCell>
@@ -115,7 +119,7 @@ export function AgendaPage() {
           <TableBody>
             {!isLoading && schedule.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7}>
+                <TableCell colSpan={8}>
                   <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
                     No hay programaciones para mostrar.
                   </Typography>
@@ -125,6 +129,15 @@ export function AgendaPage() {
             {schedule.map((item) => (
               <TableRow key={item.id} hover>
                 <TableCell>{item.fecha}</TableCell>
+                <TableCell>
+                  <Chip
+                    size="small"
+                    variant="outlined"
+                    icon={item.tipo === 'CHECKLIST' ? <AssignmentIcon /> : <DescriptionIcon />}
+                    label={item.tipo === 'CHECKLIST' ? 'Checklist' : 'Formulario'}
+                    color={item.tipo === 'CHECKLIST' ? 'primary' : 'secondary'}
+                  />
+                </TableCell>
                 <TableCell>{item.templateNombre}</TableCell>
                 <TableCell>{item.centroNombre}</TableCell>
                 <TableCell>{item.asignadoNombre}</TableCell>
@@ -139,7 +152,7 @@ export function AgendaPage() {
                 <TableCell align="right">
                   {item.estado === 'PENDIENTE' && (
                     <>
-                      {canStart && (
+                      {item.tipo === 'CHECKLIST' && canStart && (
                         <Button
                           size="small"
                           startIcon={<PlayArrowIcon />}
@@ -147,6 +160,19 @@ export function AgendaPage() {
                           disabled={startMutation.isPending}
                         >
                           Iniciar
+                        </Button>
+                      )}
+                      {item.tipo === 'FORMULARIO' && canCompleteForms && (
+                        <Button
+                          size="small"
+                          startIcon={<PlayArrowIcon />}
+                          onClick={() =>
+                            navigate(
+                              `/formularios/${item.formId}/completar?scheduleId=${item.id}`,
+                            )
+                          }
+                        >
+                          Completar
                         </Button>
                       )}
                       {canManage && (
@@ -165,6 +191,14 @@ export function AgendaPage() {
                   {item.estado === 'COMPLETADA' && item.inspectionId && (
                     <Button size="small" onClick={() => navigate(`/inspecciones/${item.inspectionId}`)}>
                       Ver inspección
+                    </Button>
+                  )}
+                  {item.estado === 'COMPLETADA' && item.formRespuestaId && (
+                    <Button
+                      size="small"
+                      onClick={() => navigate(`/formularios/${item.formId}/respuestas`)}
+                    >
+                      Ver respuesta
                     </Button>
                   )}
                 </TableCell>

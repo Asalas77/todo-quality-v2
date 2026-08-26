@@ -1,4 +1,5 @@
 import { http } from './http';
+import type { ChecklistFrequency } from './plantillas';
 
 export type FormFieldType =
   | 'TEXTO_CORTO'
@@ -7,7 +8,8 @@ export type FormFieldType =
   | 'RADIO'
   | 'CHECKBOX'
   | 'DESPLEGABLE'
-  | 'ARCHIVO';
+  | 'ARCHIVO'
+  | 'FOTO';
 
 export const FIELD_TYPE_LABEL: Record<FormFieldType, string> = {
   TEXTO_CORTO: 'Texto corto',
@@ -17,6 +19,7 @@ export const FIELD_TYPE_LABEL: Record<FormFieldType, string> = {
   CHECKBOX: 'Opción múltiple',
   DESPLEGABLE: 'Desplegable',
   ARCHIVO: 'Archivo',
+  FOTO: 'Foto',
 };
 
 export const OPTION_FIELD_TYPES: FormFieldType[] = ['RADIO', 'CHECKBOX', 'DESPLEGABLE'];
@@ -39,8 +42,10 @@ export interface FormFieldInput {
 
 export interface FormSummary {
   id: string;
+  identificador: string;
   nombre: string;
   descripcion: string | null;
+  frecuencia: ChecklistFrequency;
   activo: boolean;
   fieldCount: number;
   createdAt: string;
@@ -52,8 +57,10 @@ export interface FormDetail extends FormSummary {
 }
 
 export interface FormInput {
+  identificador: string;
   nombre: string;
   descripcion?: string;
+  frecuencia: ChecklistFrequency;
   fields: FormFieldInput[];
 }
 
@@ -67,13 +74,17 @@ export interface FormResponseValue {
   archivoUrl: string | null;
 }
 
+export type FormResponseStatus = 'BORRADOR' | 'ENVIADA';
+
 export interface FormResponseSummary {
   id: string;
   formId: string;
   centroId: string | null;
   centroNombre: string | null;
   creadoPorNombre: string;
+  estado: FormResponseStatus;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface FormResponseDetail extends FormResponseSummary {
@@ -89,6 +100,13 @@ export interface FormResponseValueInput {
 }
 
 export interface SubmitFormResponseInput {
+  centroId?: string;
+  valores: FormResponseValueInput[];
+  /** Cuando la respuesta nace de la agenda, cierra esa programación al guardarse. */
+  scheduleId?: string;
+}
+
+export interface SaveFormDraftInput {
   centroId?: string;
   valores: FormResponseValueInput[];
 }
@@ -113,6 +131,16 @@ export const formulariosApi = {
   submit: (formId: string, input: SubmitFormResponseInput) =>
     http
       .post<FormResponseDetail>(`/formularios/${formId}/respuestas`, input)
+      .then((r) => r.data),
+
+  saveDraft: (formId: string, input: SaveFormDraftInput) =>
+    http
+      .post<FormResponseDetail>(`/formularios/${formId}/borrador`, input)
+      .then((r) => r.data),
+
+  getDraft: (formId: string) =>
+    http
+      .get<FormResponseDetail | null>(`/formularios/${formId}/borrador`)
       .then((r) => r.data),
 
   listResponses: (formId: string) =>

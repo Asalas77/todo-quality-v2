@@ -10,10 +10,15 @@ const COOKIE_PATH = '/api/auth';
  * de vida corta) o de un token guardado en localStorage.
  */
 function cookieOptions(config: ConfigService, maxAgeMs: number): CookieOptions {
+  // Un túnel (ej. devtunnels) sirve la API y el frontend en dos orígenes distintos, así
+  // que la cookie viaja cross-site — SameSite=Lax no se manda en esos POST y rompe login.
+  // SameSite=None exige Secure=true (el navegador la descarta si no), por eso viene junto.
+  // Nunca activar en despliegues reales: solo para probar contra un túnel HTTPS en dev.
+  const crossSite = config.get('COOKIE_CROSS_SITE') === 'true';
   return {
     httpOnly: true,
-    secure: config.get('NODE_ENV') === 'production',
-    sameSite: 'lax',
+    secure: crossSite || config.get('NODE_ENV') === 'production',
+    sameSite: crossSite ? 'none' : 'lax',
     path: COOKIE_PATH,
     maxAge: maxAgeMs,
   };

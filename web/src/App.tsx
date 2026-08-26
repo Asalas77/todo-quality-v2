@@ -17,12 +17,87 @@ import { ReportesPage } from './pages/ReportesPage';
 import { OlvideContrasenaPage } from './pages/OlvideContrasenaPage';
 import { RestablecerContrasenaPage } from './pages/RestablecerContrasenaPage';
 import { PerfilPage } from './pages/PerfilPage';
-import { FormulariosPage } from './pages/FormulariosPage';
 import { CompletarFormularioPage } from './pages/CompletarFormularioPage';
 import { FormularioRespuestasPage } from './pages/FormularioRespuestasPage';
 
 const theme = createTheme({
-  palette: { primary: { main: '#004E89' }, secondary: { main: '#e97304' } },
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#004E89',
+      light: '#3572A8',
+      dark: '#00365F',
+      contrastText: '#FFFFFF',
+    },
+    secondary: {
+      main: '#F97316',
+      light: '#FB9A4B',
+      dark: '#C2570A',
+      contrastText: '#FFFFFF',
+    },
+    background: {
+      default: '#F4F6F9',
+      paper: '#FFFFFF',
+    },
+    success: { main: '#2E7D32' },
+    error: { main: '#C62828' },
+    text: {
+      primary: '#151B26',
+      secondary: '#5B6472',
+    },
+  },
+  shape: { borderRadius: 12 },
+  typography: {
+    fontFamily: '"Inter", ui-sans-serif, system-ui, sans-serif',
+    h5: { fontWeight: 700, letterSpacing: '-0.01em' },
+    h6: { fontWeight: 700, letterSpacing: '-0.01em' },
+    subtitle1: { fontWeight: 600 },
+    subtitle2: { fontWeight: 600 },
+    button: { fontWeight: 600, textTransform: 'none' },
+  },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: { backgroundColor: '#F4F6F9' },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: { boxShadow: '0 1px 3px rgba(15, 23, 42, 0.08)' },
+      },
+    },
+    MuiCard: {
+      defaultProps: { elevation: 0 },
+      styleOverrides: {
+        root: {
+          border: '1px solid #E5E9EF',
+          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: { borderRadius: 10 },
+        contained: { boxShadow: 'none', '&:hover': { boxShadow: 'none' } },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: { fontWeight: 600 },
+      },
+    },
+    MuiTableHead: {
+      styleOverrides: {
+        root: {
+          '& .MuiTableCell-root': {
+            fontWeight: 700,
+            color: '#5B6472',
+            backgroundColor: '#F8FAFC',
+          },
+        },
+      },
+    },
+  },
 });
 
 const queryClient = new QueryClient({
@@ -124,14 +199,8 @@ export default function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/formularios"
-                element={
-                  <ProtectedRoute>
-                    <FormulariosPage />
-                  </ProtectedRoute>
-                }
-              />
+              {/* Los formularios ahora viven dentro de Plantillas (lista unificada). */}
+              <Route path="/formularios" element={<Navigate to="/plantillas" replace />} />
               <Route
                 path="/formularios/:id/completar"
                 element={

@@ -1,5 +1,6 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  DuplicateIdentificadorError,
   FORM_REPOSITORY,
   Form,
   FormInput,
@@ -16,6 +17,9 @@ export class UpdateFormUseCase {
       return await this.forms.update(id, input);
     } catch (error) {
       if (error instanceof FormNotFoundError) throw new NotFoundException(error.message);
+      if (error instanceof DuplicateIdentificadorError) {
+        throw new ConflictException(error.message);
+      }
       throw error;
     }
   }

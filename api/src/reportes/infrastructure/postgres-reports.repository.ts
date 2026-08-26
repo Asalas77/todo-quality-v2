@@ -3,6 +3,7 @@ import {
   CentroConformidad,
   DashboardSummary,
   DateRangeFilter,
+  FormulariosActividad,
   OpenFinding,
   ReportsRepositoryPort,
   TrendPoint,
@@ -28,6 +29,12 @@ interface CentroConformidadRow {
   centro_nombre: string;
   total: string;
   conformes: string;
+}
+
+interface FormulariosActividadRow {
+  form_id: string;
+  form_nombre: string;
+  respuestas: string;
 }
 
 interface OpenFindingRow {
@@ -166,5 +173,37 @@ export class PostgresReportsRepository implements ReportsRepositoryPort {
       fechaControl: row.fecha_control,
       vencido: row.vencido,
     }));
+  }
+
+  async getFormulariosActividad(filter: DateRangeFilter): Promise<FormulariosActividad> {
+    // created_at es timestamptz y el filtro son fechas: el rango se cierra en el día
+    // siguiente a "hasta" con < para incluir todo ese día sin depender de la hora.
+    const rows = await this.tx.run((manager) =>
+      manager.query<FormulariosActividadRow[]>(
+        `SELECT f.id AS form_id, f.nombre AS form_nombre, count(r.id) AS respuestas
+         FROM formulario f
+         LEFT JOIN formulario_respuesta r
+           ON r.form_id = f.id
+           AND r.created_at >= $1::date
+           AND r.created_at < ($2::date + 1)
+           AND ($3::uuid IS NULL OR r.centro_id = $3)
+         WHERE f.activo = true
+         GROUP BY f.id, f.nombre
+         HAVING count(r.id) > 0
+         ORDER BY count(r.id) DESC, f.nombre`,
+        [filter.desde, filter.hasta, filter.centroId ?? null],
+      ),
+    );
+
+    const porFormulario = rows.map((row) => ({
+      formId: row.form_id,
+      formNombre: row.form_nombre,
+      respuestas: Number(row.respuestas),
+    }));
+
+    return {
+      totalRespuestas: porFormulario.reduce((sum, f) => sum + f.respuestas, 0),
+      porFormulario,
+    };
   }
 }

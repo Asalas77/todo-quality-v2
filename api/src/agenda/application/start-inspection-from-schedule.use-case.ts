@@ -6,6 +6,7 @@ import {
   ScheduleNotFoundError,
   ScheduleNotPendingError,
   ScheduleRepositoryPort,
+  ScheduleWrongTargetTypeError,
 } from '../domain/ports/schedule-repository.port';
 
 export interface StartInspectionFromScheduleCommand {
@@ -31,6 +32,10 @@ export class StartInspectionFromScheduleUseCase {
     if (!scheduled) throw new NotFoundException('La programación no existe');
     if (scheduled.estado !== 'PENDIENTE') {
       throw new ConflictException('Esta programación ya no está pendiente');
+    }
+    // Lo agendado de tipo FORMULARIO se completa desde el módulo de formularios, no acá.
+    if (scheduled.tipo !== 'CHECKLIST' || !scheduled.templateId) {
+      throw new ConflictException(new ScheduleWrongTargetTypeError('CHECKLIST').message);
     }
 
     const inspection = await this.startInspection.execute({

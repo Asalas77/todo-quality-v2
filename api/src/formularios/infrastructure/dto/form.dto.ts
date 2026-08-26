@@ -14,6 +14,14 @@ import {
 const trim = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
 
+/** Mismos valores que ChecklistFrequencyDto (plantillas) — misma noción de "cada cuánto". */
+export enum FormFrequencyDto {
+  DIARIO = 'DIARIO',
+  SEMANAL = 'SEMANAL',
+  BIMESTRAL = 'BIMESTRAL',
+  TRIMESTRAL = 'TRIMESTRAL',
+}
+
 export enum FormFieldTypeDto {
   TEXTO_CORTO = 'TEXTO_CORTO',
   TEXTO_LARGO = 'TEXTO_LARGO',
@@ -22,6 +30,7 @@ export enum FormFieldTypeDto {
   CHECKBOX = 'CHECKBOX',
   DESPLEGABLE = 'DESPLEGABLE',
   ARCHIVO = 'ARCHIVO',
+  FOTO = 'FOTO',
 }
 
 const OPTION_FIELD_TYPES = [
@@ -51,6 +60,11 @@ export class FormFieldDto {
 
 export class CreateFormDto {
   @IsString()
+  @Length(1, 50, { message: 'El identificador es obligatorio' })
+  @Transform(trim)
+  identificador!: string;
+
+  @IsString()
   @Length(2, 150, { message: 'El nombre es obligatorio' })
   @Transform(trim)
   nombre!: string;
@@ -59,6 +73,9 @@ export class CreateFormDto {
   @IsString()
   @Transform(trim)
   descripcion?: string;
+
+  @IsEnum(FormFrequencyDto, { message: 'Frecuencia inválida' })
+  frecuencia!: FormFrequencyDto;
 
   @IsArray()
   @ArrayMinSize(1, { message: 'Agrega al menos un campo al formulario' })
@@ -97,6 +114,23 @@ export class FormResponseValueDto {
 }
 
 export class SubmitFormResponseDto {
+  @IsOptional()
+  @IsString()
+  centroId?: string;
+
+  /** Cuando la respuesta viene de la agenda, cierra esa programación al guardarse. */
+  @IsOptional()
+  @IsString()
+  scheduleId?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FormResponseValueDto)
+  valores!: FormResponseValueDto[];
+}
+
+/** Guardar avance no exige campos obligatorios ni cierra ninguna programación de agenda. */
+export class SaveFormDraftDto {
   @IsOptional()
   @IsString()
   centroId?: string;

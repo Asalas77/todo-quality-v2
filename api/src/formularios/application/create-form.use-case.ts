@@ -1,5 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import {
+  DuplicateIdentificadorError,
   FORM_REPOSITORY,
   Form,
   FormInput,
@@ -14,8 +15,15 @@ export interface CreateFormCommand extends FormInput {
 export class CreateFormUseCase {
   constructor(@Inject(FORM_REPOSITORY) private readonly forms: FormRepositoryPort) {}
 
-  execute(command: CreateFormCommand): Promise<Form> {
+  async execute(command: CreateFormCommand): Promise<Form> {
     const { createdBy, ...input } = command;
-    return this.forms.create(input, createdBy);
+    try {
+      return await this.forms.create(input, createdBy);
+    } catch (error) {
+      if (error instanceof DuplicateIdentificadorError) {
+        throw new ConflictException(error.message);
+      }
+      throw error;
+    }
   }
 }

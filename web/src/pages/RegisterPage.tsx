@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Alert,
-  Box,
   Button,
   Card,
   CardContent,
@@ -18,6 +17,7 @@ import {
 import { AxiosError } from 'axios';
 import { authApi } from '../api/auth';
 import { isValidRut } from '../lib/rut';
+import { AuthBackground } from '../components/AuthBackground';
 
 const schema = z.object({
   empresaNombre: z.string().min(2, 'Obligatorio'),
@@ -59,17 +59,8 @@ export function RegisterPage() {
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        minHeight: '100vh',
-        alignItems: 'center',
-        justifyContent: 'center',
-        bgcolor: 'grey.100',
-        py: 4,
-      }}
-    >
-      <Card sx={{ width: 460, p: 2 }}>
+    <AuthBackground>
+      <Card sx={{ width: 460, p: 2, borderRadius: 3, boxShadow: '0 8px 32px rgba(15, 23, 42, 0.08)' }}>
         <CardContent>
           <Typography variant="h5" component="h1" sx={{ textAlign: 'center' }} gutterBottom>
             Registra tu empresa
@@ -155,6 +146,6 @@ export function RegisterPage() {
           </form>
         </CardContent>
       </Card>
-    </Box>
+    </AuthBackground>
   );
 }

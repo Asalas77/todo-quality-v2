@@ -3,6 +3,7 @@ import { GetDashboardSummaryUseCase } from '../application/get-dashboard-summary
 import { GetDashboardTrendUseCase } from '../application/get-dashboard-trend.use-case';
 import { GetConformidadPorCentroUseCase } from '../application/get-conformidad-por-centro.use-case';
 import { GetHallazgosAbiertosUseCase } from '../application/get-hallazgos-abiertos.use-case';
+import { GetFormulariosActividadUseCase } from '../application/get-formularios-actividad.use-case';
 import { CentroQueryDto, DateRangeQueryDto } from './dto/date-range-query.dto';
 import { RequirePermissions } from '../../auth/infrastructure/decorators/require-permissions.decorator';
 
@@ -14,6 +15,7 @@ export class ReportesController {
     private readonly getTrend: GetDashboardTrendUseCase,
     private readonly getConformidadPorCentro: GetConformidadPorCentroUseCase,
     private readonly getHallazgosAbiertos: GetHallazgosAbiertosUseCase,
+    private readonly getFormulariosActividad: GetFormulariosActividadUseCase,
   ) {}
 
   @Get('resumen')
@@ -34,5 +36,10 @@ export class ReportesController {
   @Get('hallazgos-abiertos')
   hallazgosAbiertos(@Query() query: CentroQueryDto) {
     return this.getHallazgosAbiertos.execute(query.centroId);
+  }
+
+  @Get('formularios')
+  formularios(@Query() query: DateRangeQueryDto) {
+    return this.getFormulariosActividad.execute(query);
   }
 }

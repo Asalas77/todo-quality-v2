@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import {
+  DuplicateIdentificadorError,
   Form,
   FormField,
   FormFieldInput,
@@ -11,11 +12,14 @@ import {
 } from '../domain/ports/form-repository.port';
 import { TenantTransaction } from '../../shared/tenant/tenant-transaction';
 import { rowsFromUpdate } from '../../shared/pg-query-result';
+import { isUniqueViolation } from '../../shared/pg-error-codes';
 
 interface FormRow {
   id: string;
+  identificador: string;
   nombre: string;
   descripcion: string | null;
+  frecuencia: FormSummary['frecuencia'];
   activo: boolean;
   created_at: Date;
   updated_at: Date;
@@ -37,8 +41,10 @@ interface FieldRow {
 function toSummary(row: FormSummaryRow): FormSummary {
   return {
     id: row.id,
+    identificador: row.identificador,
     nombre: row.nombre,
     descripcion: row.descripcion,
+    frecuencia: row.frecuencia,
     activo: row.activo,
     fieldCount: Number(row.field_count),
     createdAt: row.created_at,
@@ -91,36 +97,46 @@ export class PostgresFormRepository implements FormRepositoryPort {
   }
 
   async create(input: FormInput, createdBy: string): Promise<Form> {
-    return this.tx.run(async (manager) => {
-      const rows = await manager.query<FormRow[]>(
-        `INSERT INTO formulario (tenant_id, nombre, descripcion, created_by)
-         VALUES (current_setting('app.current_tenant')::uuid, $1, $2, $3)
-         RETURNING *`,
-        [input.nombre, input.descripcion ?? null, createdBy],
-      );
-      const form = rows[0];
-      const fields = await this.insertFields(manager, form.id, input.fields);
-      return { ...toSummary({ ...form, field_count: String(fields.length) }), fields };
-    });
+    try {
+      return await this.tx.run(async (manager) => {
+        const rows = await manager.query<FormRow[]>(
+          `INSERT INTO formulario (tenant_id, identificador, nombre, descripcion, frecuencia, created_by)
+           VALUES (current_setting('app.current_tenant')::uuid, $1, $2, $3, $4, $5)
+           RETURNING *`,
+          [input.identificador, input.nombre, input.descripcion ?? null, input.frecuencia, createdBy],
+        );
+        const form = rows[0];
+        const fields = await this.insertFields(manager, form.id, input.fields);
+        return { ...toSummary({ ...form, field_count: String(fields.length) }), fields };
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new DuplicateIdentificadorError();
+      throw error;
+    }
   }
 
   async update(id: string, input: FormInput): Promise<Form> {
-    return this.tx.run(async (manager) => {
-      const result = await manager.query(
-        `UPDATE formulario
-         SET nombre = $1, descripcion = $2, updated_at = now()
-         WHERE id = $3
-         RETURNING *`,
-        [input.nombre, input.descripcion ?? null, id],
-      );
-      const rows = rowsFromUpdate<FormRow>(result);
-      const form = rows[0];
-      if (!form) throw new FormNotFoundError();
+    try {
+      return await this.tx.run(async (manager) => {
+        const result = await manager.query(
+          `UPDATE formulario
+           SET identificador = $1, nombre = $2, descripcion = $3, frecuencia = $4, updated_at = now()
+           WHERE id = $5
+           RETURNING *`,
+          [input.identificador, input.nombre, input.descripcion ?? null, input.frecuencia, id],
+        );
+        const rows = rowsFromUpdate<FormRow>(result);
+        const form = rows[0];
+        if (!form) throw new FormNotFoundError();
 
-      await manager.query('DELETE FROM formulario_campo WHERE form_id = $1', [id]);
-      const fields = await this.insertFields(manager, id, input.fields);
-      return { ...toSummary({ ...form, field_count: String(fields.length) }), fields };
-    });
+        await manager.query('DELETE FROM formulario_campo WHERE form_id = $1', [id]);
+        const fields = await this.insertFields(manager, id, input.fields);
+        return { ...toSummary({ ...form, field_count: String(fields.length) }), fields };
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new DuplicateIdentificadorError();
+      throw error;
+    }
   }
 
   async setActivo(id: string, activo: boolean): Promise<FormSummary> {

@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   Alert,
-  Box,
   Button,
   Card,
   CardContent,
@@ -15,6 +14,7 @@ import {
   Typography,
 } from '@mui/material';
 import { authApi } from '../api/auth';
+import { AuthBackground } from '../components/AuthBackground';
 
 const schema = z.object({
   email: z.string().email('Correo electrónico inválido'),
@@ -39,16 +39,8 @@ export function OlvideContrasenaPage() {
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        minHeight: '100vh',
-        alignItems: 'center',
-        justifyContent: 'center',
-        bgcolor: 'grey.100',
-      }}
-    >
-      <Card sx={{ width: 420, p: 2 }}>
+    <AuthBackground>
+      <Card sx={{ width: 420, p: 2, borderRadius: 3, boxShadow: '0 8px 32px rgba(15, 23, 42, 0.08)' }}>
         <CardContent>
           <Typography variant="h5" component="h1" sx={{ textAlign: 'center' }} gutterBottom>
             Recuperar contraseña
@@ -107,6 +99,6 @@ export function OlvideContrasenaPage() {
           )}
         </CardContent>
       </Card>
-    </Box>
+    </AuthBackground>
   );
 }

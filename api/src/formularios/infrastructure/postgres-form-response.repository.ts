@@ -15,7 +15,9 @@ interface ResponseRow {
   centro_id: string | null;
   centro_nombre: string | null;
   creado_por_nombre: string;
+  estado: FormResponseSummary['estado'];
   created_at: Date;
+  updated_at: Date;
 }
 
 interface ValueRow {
@@ -35,7 +37,9 @@ function toSummary(row: ResponseRow): FormResponseSummary {
     centroId: row.centro_id,
     centroNombre: row.centro_nombre,
     creadoPorNombre: row.creado_por_nombre,
+    estado: row.estado,
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
@@ -53,7 +57,7 @@ function toValue(row: ValueRow): FormResponseValue {
 
 const RESPONSE_SELECT = `
   SELECT r.id, r.form_id, r.centro_id, c.nombre AS centro_nombre,
-         u.nombre || ' ' || u.apellido AS creado_por_nombre, r.created_at
+         u.nombre || ' ' || u.apellido AS creado_por_nombre, r.estado, r.created_at, r.updated_at
   FROM formulario_respuesta r
   LEFT JOIN centro c ON c.id = r.centro_id
   JOIN app_user u ON u.id = r.creado_por
@@ -63,15 +67,73 @@ const RESPONSE_SELECT = `
 export class PostgresFormResponseRepository implements FormResponseRepositoryPort {
   constructor(private readonly tx: TenantTransaction) {}
 
-  async submit(input: SubmitFormResponseInput): Promise<FormResponseDetail> {
+  submit(input: SubmitFormResponseInput): Promise<FormResponseDetail> {
+    return this.upsert(input, 'ENVIADA');
+  }
+
+  saveDraft(input: SubmitFormResponseInput): Promise<FormResponseDetail> {
+    return this.upsert(input, 'BORRADOR');
+  }
+
+  async findDraft(formId: string, userId: string): Promise<FormResponseDetail | null> {
     return this.tx.run(async (manager) => {
-      const responseRows = await manager.query<ResponseRow[]>(
-        `INSERT INTO formulario_respuesta (tenant_id, form_id, centro_id, creado_por)
-         VALUES (current_setting('app.current_tenant')::uuid, $1, $2, $3)
-         RETURNING id, form_id, centro_id, created_at`,
-        [input.formId, input.centroId ?? null, input.creadoPor],
+      const rows = await manager.query<Array<{ id: string }>>(
+        `SELECT id FROM formulario_respuesta
+         WHERE form_id = $1 AND creado_por = $2 AND estado = 'BORRADOR'`,
+        [formId, userId],
       );
-      const respuestaId = responseRows[0].id;
+      if (!rows[0]) return null;
+      return this.findById(rows[0].id, manager);
+    });
+  }
+
+  /**
+   * Un solo camino para "enviar" y "guardar avance": si ya había un borrador de este
+   * usuario para este formulario, lo retoma y reemplaza su estado y valores; si no había,
+   * inserta una fila nueva.
+   *
+   * No se puede resolver con un solo INSERT ... ON CONFLICT: el índice único parcial solo
+   * cubre filas con estado = 'BORRADOR', así que solo actúa de árbitro cuando la fila que
+   * se está insertando también es BORRADOR (guardar avance). Al finalizar, la fila nueva
+   * es ENVIADA — queda fuera del dominio del índice parcial y Postgres no la considera en
+   * conflicto con el borrador existente, aunque comparta form_id/creado_por: sencillamente
+   * inserta una fila aparte. Por eso acá se busca el borrador explícitamente primero.
+   */
+  private async upsert(
+    input: SubmitFormResponseInput,
+    estado: 'BORRADOR' | 'ENVIADA',
+  ): Promise<FormResponseDetail> {
+    return this.tx.run(async (manager) => {
+      const draftRows = await manager.query<Array<{ id: string }>>(
+        `SELECT id FROM formulario_respuesta
+         WHERE form_id = $1 AND creado_por = $2 AND estado = 'BORRADOR'`,
+        [input.formId, input.creadoPor],
+      );
+
+      let respuestaId: string;
+      if (draftRows[0]) {
+        respuestaId = draftRows[0].id;
+        await manager.query(
+          `UPDATE formulario_respuesta
+           SET centro_id = $1, estado = $2, updated_at = now()
+           WHERE id = $3`,
+          [input.centroId ?? null, estado, respuestaId],
+        );
+      } else {
+        const inserted = await manager.query<Array<{ id: string }>>(
+          `INSERT INTO formulario_respuesta (tenant_id, form_id, centro_id, creado_por, estado)
+           VALUES (current_setting('app.current_tenant')::uuid, $1, $2, $3, $4)
+           RETURNING id`,
+          [input.formId, input.centroId ?? null, input.creadoPor, estado],
+        );
+        respuestaId = inserted[0].id;
+      }
+
+      // Reemplazo completo de valores, igual que "editar plantilla" reemplaza los ítems:
+      // más simple que reconciliar campo por campo y el volumen por respuesta es chico.
+      await manager.query('DELETE FROM formulario_respuesta_valor WHERE respuesta_id = $1', [
+        respuestaId,
+      ]);
 
       if (input.valores.length > 0) {
         const params: unknown[] = [respuestaId];
@@ -100,7 +162,7 @@ export class PostgresFormResponseRepository implements FormResponseRepositoryPor
   async findByForm(formId: string): Promise<FormResponseSummary[]> {
     const rows = await this.tx.run((manager) =>
       manager.query<ResponseRow[]>(
-        `${RESPONSE_SELECT} WHERE r.form_id = $1 ORDER BY r.created_at DESC`,
+        `${RESPONSE_SELECT} WHERE r.form_id = $1 AND r.estado = 'ENVIADA' ORDER BY r.created_at DESC`,
         [formId],
       ),
     );
