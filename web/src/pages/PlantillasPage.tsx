@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
+  Box,
   Button,
   Card,
   Chip,
@@ -244,7 +245,7 @@ export function PlantillasPage() {
             size="small"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            sx={{ minWidth: 280 }}
+            sx={{ minWidth: 280, flex: '1 1 280px' }}
           />
           <FormControlLabel
             control={
@@ -257,6 +258,7 @@ export function PlantillasPage() {
           />
         </Stack>
 
+        <Box sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -395,6 +397,7 @@ export function PlantillasPage() {
             })}
           </TableBody>
         </Table>
+        </Box>
       </Card>
 
       <PlantillaFormDialog

@@ -273,13 +273,14 @@ export function FormBuilderDialogV2({ open, form, onClose, onSubmit }: FormBuild
                             deleteDisabled={fields.length === 1}
                           >
                             <Stack spacing={1}>
-                              <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
+                              <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
                                 <TextField
                                   label={`Campo ${index + 1}`}
                                   fullWidth
                                   size="small"
                                   error={!!errors.fields?.[index]?.etiqueta}
                                   helperText={errors.fields?.[index]?.etiqueta?.message}
+                                  sx={{ minWidth: 160, flex: '1 1 160px' }}
                                   {...register(`fields.${index}.etiqueta` as const)}
                                 />
                                 <FormControl size="small" sx={{ minWidth: 160 }}>

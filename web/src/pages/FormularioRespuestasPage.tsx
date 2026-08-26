@@ -86,13 +86,14 @@ export function FormularioRespuestasPage() {
   return (
     <MainLayout>
       <Card sx={{ p: 3 }}>
-        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
           <Typography variant="h5">Respuestas: {form?.nombre ?? '…'}</Typography>
           <Link component={RouterLink} to="/formularios">
             Volver a formularios
           </Link>
         </Stack>
 
+        <Box sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -126,6 +127,7 @@ export function FormularioRespuestasPage() {
             ))}
           </TableBody>
         </Table>
+        </Box>
       </Card>
 
       <Dialog open={!!openResponseId} onClose={() => setOpenResponseId(null)} maxWidth="sm" fullWidth>

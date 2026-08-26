@@ -60,7 +60,7 @@ export function RegisterPage() {
 
   return (
     <AuthBackground>
-      <Card sx={{ width: 460, p: 2, borderRadius: 3, boxShadow: '0 8px 32px rgba(15, 23, 42, 0.08)' }}>
+      <Card sx={{ width: 460, maxWidth: '100%', p: 2, borderRadius: 3, boxShadow: '0 8px 32px rgba(15, 23, 42, 0.08)' }}>
         <CardContent>
           <Typography variant="h5" component="h1" sx={{ textAlign: 'center' }} gutterBottom>
             Registra tu empresa

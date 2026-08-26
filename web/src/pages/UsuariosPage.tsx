@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
+  Box,
   Button,
   Card,
   Chip,
@@ -149,6 +150,7 @@ export function UsuariosPage() {
           label="Incluir inactivos"
         />
 
+        <Box sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -222,6 +224,7 @@ export function UsuariosPage() {
             ))}
           </TableBody>
         </Table>
+        </Box>
       </Card>
 
       <UserFormDialog

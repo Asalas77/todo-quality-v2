@@ -40,7 +40,7 @@ export function SortableFormField({ id, onDelete, deleteDisabled, children }: So
         >
           <DragIndicatorIcon fontSize="small" />
         </IconButton>
-        <Box sx={{ flexGrow: 1 }}>{children}</Box>
+        <Box sx={{ flexGrow: 1, minWidth: 0 }}>{children}</Box>
         <IconButton size="small" onClick={onDelete} disabled={deleteDisabled} sx={{ mt: 0.5 }}>
           <DeleteIcon fontSize="small" />
         </IconButton>

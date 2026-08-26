@@ -201,6 +201,7 @@ export function ReportesPage() {
                 No se completaron formularios en este período.
               </Typography>
             ) : (
+              <Box sx={{ overflowX: 'auto' }}>
               <Table size="small" sx={{ mt: 1.5 }}>
                 <TableHead>
                   <TableRow>
@@ -217,6 +218,7 @@ export function ReportesPage() {
                   ))}
                 </TableBody>
               </Table>
+              </Box>
             )}
           </CardContent>
         </Card>
@@ -231,6 +233,7 @@ export function ReportesPage() {
                 <CircularProgress size={28} />
               </Box>
             ) : (
+              <Box sx={{ overflowX: 'auto' }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -270,6 +273,7 @@ export function ReportesPage() {
                   ))}
                 </TableBody>
               </Table>
+              </Box>
             )}
           </CardContent>
         </Card>

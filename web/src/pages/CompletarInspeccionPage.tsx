@@ -173,14 +173,14 @@ export function CompletarInspeccionPage() {
   return (
     <MainLayout>
       <Card sx={{ p: 3, mb: 2 }} className="no-print">
-        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5 }}>
           <Box>
             <Typography variant="h5">{inspection.templateNombre}</Typography>
             <Typography color="text.secondary">
               {inspection.centroNombre} · {inspection.fecha} · {inspection.inspectorNombre}
             </Typography>
           </Box>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
             <Chip
               label={`${ESTADO_LABEL[inspection.estado]} (${answeredCount}/${inspection.answers.length})`}
               color={ESTADO_COLOR[inspection.estado]}

@@ -57,11 +57,18 @@ export function AgendaKanban({ pendingSchedule, inspections, onStartSchedule }: 
   }, [pendingSchedule, inspections, navigate, onStartSchedule]);
 
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, alignItems: 'flex-start' }}>
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+        gap: 2,
+        alignItems: 'flex-start',
+      }}
+    >
       {COLUMN_ORDER.map((col) => {
         const items = byColumn.get(col) ?? [];
         return (
-          <Box key={col}>
+          <Box key={col} sx={{ minWidth: 0 }}>
             <Stack
               direction="row"
               sx={{

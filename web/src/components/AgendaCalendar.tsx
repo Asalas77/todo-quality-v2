@@ -22,6 +22,7 @@ const DOT_LABEL: Record<CalendarDotColor, string> = {
 };
 
 const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const DIAS_SEMANA_CORTO = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
@@ -115,10 +116,11 @@ export function AgendaCalendar({ pendingSchedule, inspections, onStartSchedule }
         </IconButton>
       </Stack>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.5 }}>
-        {DIAS_SEMANA.map((dia) => (
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 0.5 }}>
+        {DIAS_SEMANA.map((dia, i) => (
           <Typography key={dia} variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontWeight: 600 }}>
-            {dia}
+            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>{dia}</Box>
+            <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>{DIAS_SEMANA_CORTO[i]}</Box>
           </Typography>
         ))}
 
@@ -132,7 +134,8 @@ export function AgendaCalendar({ pendingSchedule, inspections, onStartSchedule }
             <Box
               key={key}
               sx={{
-                minHeight: 92,
+                minWidth: 0,
+                minHeight: { xs: 64, sm: 92 },
                 p: 0.5,
                 border: '1px solid',
                 borderColor: 'divider',
@@ -159,12 +162,18 @@ export function AgendaCalendar({ pendingSchedule, inspections, onStartSchedule }
                     onClick={() => handleEntryClick(entry)}
                     sx={{
                       height: 18,
+                      maxWidth: '100%',
                       fontSize: '0.65rem',
                       justifyContent: 'flex-start',
                       bgcolor: DOT_COLOR[entry.kind === 'schedule' ? 'PENDIENTE' : entry.estado],
                       color: 'white',
                       cursor: 'pointer',
-                      '& .MuiChip-label': { px: 0.75 },
+                      '& .MuiChip-label': {
+                        px: 0.75,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      },
                     }}
                   />
                 ))}
@@ -179,7 +188,7 @@ export function AgendaCalendar({ pendingSchedule, inspections, onStartSchedule }
         })}
       </Box>
 
-      <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+      <Stack direction="row" spacing={2} sx={{ mt: 2, flexWrap: 'wrap', rowGap: 1 }}>
         {(Object.keys(DOT_LABEL) as CalendarDotColor[]).map((estado) => (
           <Stack key={estado} direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
             <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: DOT_COLOR[estado] }} />

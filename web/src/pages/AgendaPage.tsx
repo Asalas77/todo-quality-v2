@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
+  Box,
   Button,
   Card,
   Chip,
@@ -179,6 +180,7 @@ export function AgendaPage() {
               </Select>
             </FormControl>
 
+            <Box sx={{ overflowX: 'auto' }}>
             <Table size="small" sx={{ mb: 4 }}>
               <TableHead>
                 <TableRow>
@@ -282,10 +284,12 @@ export function AgendaPage() {
                 ))}
               </TableBody>
             </Table>
+            </Box>
 
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
               Inspecciones completadas
             </Typography>
+            <Box sx={{ overflowX: 'auto' }}>
             <Table size="small">
               <TableHead>
                 <TableRow>
@@ -328,6 +332,7 @@ export function AgendaPage() {
                 ))}
               </TableBody>
             </Table>
+            </Box>
           </>
         )}
       </Card>

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
+  Box,
   Button,
   Card,
   Chip,
@@ -115,13 +116,13 @@ export function CentrosPage() {
           )}
         </Stack>
 
-        <Stack direction="row" spacing={2} sx={{ mb: 2, alignItems: 'center' }}>
+        <Stack direction="row" spacing={2} sx={{ mb: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <TextField
             label="Buscar por nombre"
             size="small"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            sx={{ minWidth: 260 }}
+            sx={{ minWidth: 260, flex: '1 1 260px' }}
           />
           <FormControlLabel
             control={
@@ -134,6 +135,7 @@ export function CentrosPage() {
           />
         </Stack>
 
+        <Box sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -191,6 +193,7 @@ export function CentrosPage() {
             ))}
           </TableBody>
         </Table>
+        </Box>
       </Card>
 
       <CentroFormDialog

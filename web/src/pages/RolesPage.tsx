@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
+  Box,
   Button,
   Card,
   Chip,
@@ -101,6 +102,7 @@ export function RolesPage() {
           </Button>
         </Stack>
 
+        <Box sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -150,6 +152,7 @@ export function RolesPage() {
             ))}
           </TableBody>
         </Table>
+        </Box>
       </Card>
 
       <RoleFormDialog
