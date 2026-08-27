@@ -25,12 +25,16 @@ export interface CentroConformidad {
 
 export interface OpenFinding {
   inspectionId: string;
+  templateItemId: string;
   centroNombre: string;
   templateNombre: string;
   itemDescripcion: string;
   responsable: string | null;
   fechaControl: string | null;
   vencido: boolean;
+  resuelto: boolean;
+  resueltoAt: string | null;
+  resueltoPorNombre: string | null;
 }
 
 /**
@@ -62,9 +66,11 @@ export const reportesApi = {
   getConformidadPorCentro: (filter: DateRangeFilter) =>
     http.get<CentroConformidad[]>('/reportes/centros', { params: filter }).then((r) => r.data),
 
-  getHallazgosAbiertos: (centroId?: string) =>
+  getHallazgosAbiertos: (centroId?: string, incluirResueltos = false) =>
     http
-      .get<OpenFinding[]>('/reportes/hallazgos-abiertos', { params: { centroId } })
+      .get<OpenFinding[]>('/reportes/hallazgos-abiertos', {
+        params: { centroId, incluirResueltos: incluirResueltos || undefined },
+      })
       .then((r) => r.data),
 
   getFormulariosActividad: (filter: DateRangeFilter) =>

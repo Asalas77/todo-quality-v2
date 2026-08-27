@@ -77,6 +77,11 @@ export function InspeccionPrintView({ inspection }: InspeccionPrintViewProps) {
                   Fecha de compromiso: {item.fechaCompromiso ?? '—'} · Fecha de control:{' '}
                   {item.fechaControl ?? '—'} · Responsable: {item.responsable ?? '—'}
                 </Typography>
+                <Typography variant="body2">
+                  {item.resuelto
+                    ? `Resuelto por ${item.resueltoPorNombre} el ${item.resueltoAt ? new Date(item.resueltoAt).toLocaleString() : ''}`
+                    : 'Sin resolver'}
+                </Typography>
                 {photos[item.templateItemId] && (
                   <Box
                     component="img"

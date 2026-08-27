@@ -43,6 +43,8 @@ interface AnswerRow {
   fecha_compromiso: string | null;
   fecha_control: string | null;
   responsable: string | null;
+  resuelto_at: Date | null;
+  resuelto_por_nombre: string | null;
 }
 
 function toSummary(row: InspectionSummaryRow): InspectionSummary {
@@ -74,6 +76,9 @@ function toAnswer(row: AnswerRow): InspectionAnswer {
     fechaCompromiso: row.fecha_compromiso,
     fechaControl: row.fecha_control,
     responsable: row.responsable,
+    resuelto: row.resuelto_at !== null,
+    resueltoAt: row.resuelto_at,
+    resueltoPorNombre: row.resuelto_por_nombre,
   };
 }
 
@@ -263,6 +268,45 @@ export class PostgresInspectionRepository implements InspectionRepositoryPort {
     });
   }
 
+  async setResuelto(
+    inspectionId: string,
+    templateItemId: string,
+    resuelto: boolean,
+    resueltoPor: string,
+  ): Promise<InspectionAnswer> {
+    return this.tx.run(async (manager) => {
+      const existing = await manager.query<Array<{ id: string }>>(
+        `SELECT 1 AS id FROM inspection_answer
+         WHERE inspection_id = $1 AND template_item_id = $2`,
+        [inspectionId, templateItemId],
+      );
+      if (!existing[0]) throw new AnswerNotFoundError();
+
+      await manager.query(
+        `UPDATE inspection_answer
+         SET resuelto_at = CASE WHEN $1 THEN now() ELSE NULL END,
+             resuelto_por = CASE WHEN $1 THEN $2 ELSE NULL END,
+             updated_at = now()
+         WHERE inspection_id = $3 AND template_item_id = $4`,
+        [resuelto, resueltoPor, inspectionId, templateItemId],
+      );
+
+      const rows = await manager.query<AnswerRow[]>(
+        `SELECT a.template_item_id, ti.descripcion AS item_descripcion,
+                ti.criticidad AS item_criticidad, ti.orden AS item_orden,
+                a.estado, a.observacion, a.evidencia_url, a.plan_accion,
+                a.fecha_compromiso, a.fecha_control, a.responsable,
+                a.resuelto_at, (ru.nombre || ' ' || ru.apellido) AS resuelto_por_nombre
+         FROM inspection_answer a
+         JOIN template_item ti ON ti.id = a.template_item_id
+         LEFT JOIN app_user ru ON ru.id = a.resuelto_por
+         WHERE a.inspection_id = $1 AND a.template_item_id = $2`,
+        [inspectionId, templateItemId],
+      );
+      return toAnswer(rows[0]);
+    });
+  }
+
   async getEvidenciaStorageKey(
     inspectionId: string,
     templateItemId: string,
@@ -286,9 +330,11 @@ export class PostgresInspectionRepository implements InspectionRepositoryPort {
       `SELECT a.template_item_id, ti.descripcion AS item_descripcion,
               ti.criticidad AS item_criticidad, ti.orden AS item_orden,
               a.estado, a.observacion, a.evidencia_url, a.plan_accion,
-              a.fecha_compromiso, a.fecha_control, a.responsable
+              a.fecha_compromiso, a.fecha_control, a.responsable,
+              a.resuelto_at, (ru.nombre || ' ' || ru.apellido) AS resuelto_por_nombre
        FROM inspection_answer a
        JOIN template_item ti ON ti.id = a.template_item_id
+       LEFT JOIN app_user ru ON ru.id = a.resuelto_por
        WHERE a.inspection_id = $1
        ORDER BY ti.orden`,
       [inspectionId],

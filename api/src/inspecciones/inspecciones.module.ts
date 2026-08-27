@@ -6,6 +6,7 @@ import { StartInspectionUseCase } from './application/start-inspection.use-case'
 import { SaveInspectionAnswersUseCase } from './application/save-inspection-answers.use-case';
 import { UploadEvidenceUseCase } from './application/upload-evidence.use-case';
 import { GetEvidenceUseCase } from './application/get-evidence.use-case';
+import { ResolveFindingUseCase } from './application/resolve-finding.use-case';
 import { INSPECTION_REPOSITORY } from './domain/ports/inspection-repository.port';
 import { EVIDENCE_STORAGE } from './domain/ports/evidence-storage.port';
 import { PostgresInspectionRepository } from './infrastructure/postgres-inspection.repository';
@@ -20,6 +21,7 @@ import { DiskEvidenceStorage } from './infrastructure/disk-evidence-storage';
     SaveInspectionAnswersUseCase,
     UploadEvidenceUseCase,
     GetEvidenceUseCase,
+    ResolveFindingUseCase,
     { provide: INSPECTION_REPOSITORY, useClass: PostgresInspectionRepository },
     { provide: EVIDENCE_STORAGE, useClass: DiskEvidenceStorage },
   ],

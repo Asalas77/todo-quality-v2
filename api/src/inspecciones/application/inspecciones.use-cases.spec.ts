@@ -44,6 +44,9 @@ function buildInspection(overrides: Partial<Inspection> = {}): Inspection {
         fechaCompromiso: null,
         fechaControl: null,
         responsable: null,
+        resuelto: false,
+        resueltoAt: null,
+        resueltoPorNombre: null,
       },
     ],
     createdAt: new Date(),
@@ -92,6 +95,10 @@ class FakeInspectionRepo implements InspectionRepositoryPort {
   }
 
   async getEvidenciaStorageKey(): Promise<never> {
+    throw new Error('no usado en estos tests');
+  }
+
+  async setResuelto(): Promise<never> {
     throw new Error('no usado en estos tests');
   }
 

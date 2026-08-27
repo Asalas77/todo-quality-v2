@@ -14,6 +14,9 @@ export interface InspectionAnswer {
   fechaCompromiso: string | null;
   fechaControl: string | null;
   responsable: string | null;
+  resuelto: boolean;
+  resueltoAt: Date | null;
+  resueltoPorNombre: string | null;
 }
 
 export interface InspectionSummary {
@@ -87,6 +90,19 @@ export interface InspectionRepositoryPort {
 
   /** Lanza AnswerNotFoundError si el par (inspección, ítem) no existe en el tenant. */
   getEvidenciaStorageKey(inspectionId: string, templateItemId: string): Promise<string | null>;
+
+  /**
+   * Marca (o desmarca) un hallazgo NO_CUMPLE como resuelto, dejando registro de quién y
+   * cuándo — separado de saveAnswers por el mismo motivo que setEvidencia: es una acción
+   * de supervisor, no parte del formulario que completa el inspector.
+   * Lanza AnswerNotFoundError si el par (inspección, ítem) no existe en el tenant.
+   */
+  setResuelto(
+    inspectionId: string,
+    templateItemId: string,
+    resuelto: boolean,
+    resueltoPor: string,
+  ): Promise<InspectionAnswer>;
 }
 
 export class InspectionNotFoundError extends Error {

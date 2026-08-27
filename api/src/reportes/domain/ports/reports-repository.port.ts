@@ -31,12 +31,16 @@ export interface CentroConformidad {
 
 export interface OpenFinding {
   inspectionId: string;
+  templateItemId: string;
   centroNombre: string;
   templateNombre: string;
   itemDescripcion: string;
   responsable: string | null;
   fechaControl: string | null;
   vencido: boolean;
+  resuelto: boolean;
+  resueltoAt: Date | null;
+  resueltoPorNombre: string | null;
 }
 
 /**
@@ -56,7 +60,11 @@ export interface ReportsRepositoryPort {
   getSummary(filter: DateRangeFilter): Promise<DashboardSummary>;
   getTrend(filter: DateRangeFilter): Promise<TrendPoint[]>;
   getConformidadPorCentro(filter: DateRangeFilter): Promise<CentroConformidad[]>;
-  /** No se filtra por rango de fechas: un hallazgo abierto de hace meses sigue siendo relevante hoy. */
-  getHallazgosAbiertos(centroId?: string): Promise<OpenFinding[]>;
+  /**
+   * No se filtra por rango de fechas: un hallazgo abierto de hace meses sigue siendo
+   * relevante hoy. incluirResueltos=true trae también los ya cerrados (para el
+   * historial/auditoría de quién y cuándo los resolvió), en vez de solo los pendientes.
+   */
+  getHallazgos(centroId: string | undefined, incluirResueltos: boolean): Promise<OpenFinding[]>;
   getFormulariosActividad(filter: DateRangeFilter): Promise<FormulariosActividad>;
 }

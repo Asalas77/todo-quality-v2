@@ -1,17 +1,20 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
   CircularProgress,
   FormControl,
+  FormControlLabel,
   Grid,
   InputLabel,
   MenuItem,
   Select,
   Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -24,12 +27,15 @@ import FactCheckIcon from '@mui/icons-material/FactCheck';
 import PercentIcon from '@mui/icons-material/Percent';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { MainLayout } from '../components/MainLayout';
 import { StatTile } from '../components/StatTile';
 import { TrendChart } from '../components/TrendChart';
 import { CentroConformidadCard } from '../components/CentroConformidadCard';
 import { reportesApi } from '../api/reportes';
 import { centrosApi } from '../api/centros';
+import { inspeccionesApi } from '../api/inspecciones';
+import { useAuth } from '../context/AuthContext';
 
 function isoDaysAgo(days: number): string {
   const date = new Date();
@@ -38,9 +44,14 @@ function isoDaysAgo(days: number): string {
 }
 
 export function ReportesPage() {
+  const queryClient = useQueryClient();
+  const { hasPermission } = useAuth();
+  const canResolve = hasPermission('inspecciones.ver_todas');
+
   const [desde, setDesde] = useState(isoDaysAgo(30));
   const [hasta, setHasta] = useState(isoDaysAgo(0));
   const [centroId, setCentroId] = useState('');
+  const [incluirResueltos, setIncluirResueltos] = useState(false);
 
   const filter = useMemo(
     () => ({ desde, hasta, centroId: centroId || undefined }),
@@ -68,8 +79,17 @@ export function ReportesPage() {
   });
 
   const findingsQuery = useQuery({
-    queryKey: ['reportes-hallazgos', centroId],
-    queryFn: () => reportesApi.getHallazgosAbiertos(centroId || undefined),
+    queryKey: ['reportes-hallazgos', centroId, incluirResueltos],
+    queryFn: () => reportesApi.getHallazgosAbiertos(centroId || undefined, incluirResueltos),
+  });
+
+  const resolverMutation = useMutation({
+    mutationFn: ({ inspectionId, templateItemId, resuelto }: { inspectionId: string; templateItemId: string; resuelto: boolean }) =>
+      inspeccionesApi.resolverHallazgo(inspectionId, templateItemId, resuelto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reportes-hallazgos'] });
+      queryClient.invalidateQueries({ queryKey: ['reportes-resumen'] });
+    },
   });
 
   const formulariosQuery = useQuery({
@@ -225,9 +245,22 @@ export function ReportesPage() {
 
         <Card>
           <CardContent>
-            <Typography variant="subtitle1" gutterBottom>
-              Hallazgos abiertos
-            </Typography>
+            <Stack
+              direction="row"
+              sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mb: 1 }}
+            >
+              <Typography variant="subtitle1">Hallazgos</Typography>
+              <FormControlLabel
+                control={
+                  <Switch
+                    size="small"
+                    checked={incluirResueltos}
+                    onChange={(e) => setIncluirResueltos(e.target.checked)}
+                  />
+                }
+                label="Ver también resueltos"
+              />
+            </Stack>
             {findingsQuery.isLoading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                 <CircularProgress size={28} />
@@ -243,34 +276,73 @@ export function ReportesPage() {
                     <TableCell>Responsable</TableCell>
                     <TableCell>Fecha de control</TableCell>
                     <TableCell>Estado</TableCell>
+                    {canResolve && <TableCell align="right">Acciones</TableCell>}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {(findingsQuery.data ?? []).length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6}>
+                      <TableCell colSpan={canResolve ? 7 : 6}>
                         <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
-                          No hay hallazgos abiertos.
+                          {incluirResueltos ? 'No hay hallazgos.' : 'No hay hallazgos abiertos.'}
                         </Typography>
                       </TableCell>
                     </TableRow>
                   )}
-                  {(findingsQuery.data ?? []).map((finding) => (
-                    <TableRow key={`${finding.inspectionId}-${finding.itemDescripcion}`} hover>
-                      <TableCell>{finding.centroNombre}</TableCell>
-                      <TableCell>{finding.templateNombre}</TableCell>
-                      <TableCell>{finding.itemDescripcion}</TableCell>
-                      <TableCell>{finding.responsable ?? '—'}</TableCell>
-                      <TableCell>{finding.fechaControl ?? '—'}</TableCell>
-                      <TableCell>
-                        {finding.vencido ? (
-                          <Chip label="Vencido" color="error" size="small" />
-                        ) : (
-                          <Chip label="En plazo" color="default" size="small" />
+                  {(findingsQuery.data ?? []).map((finding) => {
+                    const key = `${finding.inspectionId}-${finding.templateItemId}`;
+                    const pending =
+                      resolverMutation.isPending &&
+                      resolverMutation.variables?.inspectionId === finding.inspectionId &&
+                      resolverMutation.variables?.templateItemId === finding.templateItemId;
+                    return (
+                      <TableRow key={key} hover>
+                        <TableCell>{finding.centroNombre}</TableCell>
+                        <TableCell>{finding.templateNombre}</TableCell>
+                        <TableCell>{finding.itemDescripcion}</TableCell>
+                        <TableCell>{finding.responsable ?? '—'}</TableCell>
+                        <TableCell>{finding.fechaControl ?? '—'}</TableCell>
+                        <TableCell>
+                          {finding.resuelto ? (
+                            <Stack spacing={0.25}>
+                              <Chip
+                                icon={<CheckCircleIcon />}
+                                label="Resuelto"
+                                color="success"
+                                size="small"
+                                sx={{ width: 'fit-content' }}
+                              />
+                              <Typography variant="caption" color="text.secondary">
+                                {finding.resueltoPorNombre} ·{' '}
+                                {finding.resueltoAt && new Date(finding.resueltoAt).toLocaleString()}
+                              </Typography>
+                            </Stack>
+                          ) : finding.vencido ? (
+                            <Chip label="Vencido" color="error" size="small" />
+                          ) : (
+                            <Chip label="En plazo" color="default" size="small" />
+                          )}
+                        </TableCell>
+                        {canResolve && (
+                          <TableCell align="right">
+                            <Button
+                              size="small"
+                              disabled={pending}
+                              onClick={() =>
+                                resolverMutation.mutate({
+                                  inspectionId: finding.inspectionId,
+                                  templateItemId: finding.templateItemId,
+                                  resuelto: !finding.resuelto,
+                                })
+                              }
+                            >
+                              {finding.resuelto ? 'Reabrir' : 'Marcar resuelto'}
+                            </Button>
+                          </TableCell>
                         )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
               </Box>

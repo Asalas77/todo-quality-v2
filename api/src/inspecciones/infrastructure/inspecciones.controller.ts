@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -21,7 +22,8 @@ import { StartInspectionUseCase } from '../application/start-inspection.use-case
 import { SaveInspectionAnswersUseCase } from '../application/save-inspection-answers.use-case';
 import { UploadEvidenceUseCase } from '../application/upload-evidence.use-case';
 import { GetEvidenceUseCase } from '../application/get-evidence.use-case';
-import { SaveAnswersDto, StartInspectionDto } from './dto/inspection.dto';
+import { ResolveFindingUseCase } from '../application/resolve-finding.use-case';
+import { ResolveFindingDto, SaveAnswersDto, StartInspectionDto } from './dto/inspection.dto';
 import { RequirePermissions } from '../../auth/infrastructure/decorators/require-permissions.decorator';
 import { RequestWithUser } from '../../auth/infrastructure/tenant-context.middleware';
 import { InspectionStatus } from '../domain/derive-inspection-status';
@@ -37,6 +39,7 @@ export class InspeccionesController {
     private readonly saveAnswers: SaveInspectionAnswersUseCase,
     private readonly uploadEvidence: UploadEvidenceUseCase,
     private readonly getEvidence: GetEvidenceUseCase,
+    private readonly resolveFinding: ResolveFindingUseCase,
   ) {}
 
   @RequirePermissions('inspecciones.ver')
@@ -120,6 +123,28 @@ export class InspeccionesController {
       canViewAll: req.user!.can('inspecciones.ver_todas'),
     });
     return { ok: true };
+  }
+
+  /**
+   * Resolver un hallazgo es una acción de supervisor: se gatea con inspecciones.ver_todas
+   * (lo mismo que ya distingue Supervisor/Administrador de Inspector en el resto del
+   * módulo), no con inspecciones.completar — el inspector que registró el hallazgo no
+   * debería poder cerrarlo él mismo sin que un supervisor lo confirme.
+   */
+  @RequirePermissions('inspecciones.ver_todas')
+  @Patch(':id/respuestas/:itemId/resolver')
+  resolver(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('itemId', ParseUUIDPipe) itemId: string,
+    @Body() dto: ResolveFindingDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.resolveFinding.execute({
+      inspectionId: id,
+      templateItemId: itemId,
+      resuelto: dto.resuelto,
+      resueltoPor: req.user!.userId,
+    });
   }
 
   /**

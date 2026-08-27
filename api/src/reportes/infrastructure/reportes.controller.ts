@@ -34,8 +34,11 @@ export class ReportesController {
   }
 
   @Get('hallazgos-abiertos')
-  hallazgosAbiertos(@Query() query: CentroQueryDto) {
-    return this.getHallazgosAbiertos.execute(query.centroId);
+  hallazgosAbiertos(
+    @Query() query: CentroQueryDto,
+    @Query('incluirResueltos') incluirResueltos?: string,
+  ) {
+    return this.getHallazgosAbiertos.execute(query.centroId, incluirResueltos === 'true');
   }
 
   @Get('formularios')

@@ -39,12 +39,15 @@ interface FormulariosActividadRow {
 
 interface OpenFindingRow {
   inspection_id: string;
+  template_item_id: string;
   centro_nombre: string;
   template_nombre: string;
   item_descripcion: string;
   responsable: string | null;
   fecha_control: string | null;
   vencido: boolean;
+  resuelto_at: Date | null;
+  resuelto_por_nombre: string | null;
 }
 
 @Injectable()
@@ -145,33 +148,41 @@ export class PostgresReportsRepository implements ReportsRepositoryPort {
     });
   }
 
-  async getHallazgosAbiertos(centroId?: string): Promise<OpenFinding[]> {
+  async getHallazgos(centroId: string | undefined, incluirResueltos: boolean): Promise<OpenFinding[]> {
     const rows = await this.tx.run((manager) =>
       manager.query<OpenFindingRow[]>(
-        `SELECT i.id AS inspection_id, c.nombre AS centro_nombre, t.nombre AS template_nombre,
+        `SELECT i.id AS inspection_id, a.template_item_id,
+                c.nombre AS centro_nombre, t.nombre AS template_nombre,
                 ti.descripcion AS item_descripcion, a.responsable, a.fecha_control::text AS fecha_control,
-                (a.fecha_control IS NOT NULL AND a.fecha_control < current_date) AS vencido
+                (a.fecha_control IS NOT NULL AND a.fecha_control < current_date AND a.resuelto_at IS NULL) AS vencido,
+                a.resuelto_at, (ru.nombre || ' ' || ru.apellido) AS resuelto_por_nombre
          FROM inspection_answer a
          JOIN inspection i ON i.id = a.inspection_id
          JOIN centro c ON c.id = i.centro_id
          JOIN checklist_template t ON t.id = i.template_id
          JOIN template_item ti ON ti.id = a.template_item_id
-         WHERE a.estado = 'NO_CUMPLE' AND a.resuelto_at IS NULL
-           AND ($1::uuid IS NULL OR i.centro_id = $1)
-         ORDER BY a.fecha_control ASC NULLS LAST
+         LEFT JOIN app_user ru ON ru.id = a.resuelto_por
+         WHERE a.estado = 'NO_CUMPLE'
+           AND ($1::boolean OR a.resuelto_at IS NULL)
+           AND ($2::uuid IS NULL OR i.centro_id = $2)
+         ORDER BY a.resuelto_at IS NOT NULL, a.fecha_control ASC NULLS LAST
          LIMIT 200`,
-        [centroId ?? null],
+        [incluirResueltos, centroId ?? null],
       ),
     );
 
     return rows.map((row) => ({
       inspectionId: row.inspection_id,
+      templateItemId: row.template_item_id,
       centroNombre: row.centro_nombre,
       templateNombre: row.template_nombre,
       itemDescripcion: row.item_descripcion,
       responsable: row.responsable,
       fechaControl: row.fecha_control,
       vencido: row.vencido,
+      resuelto: row.resuelto_at !== null,
+      resueltoAt: row.resuelto_at,
+      resueltoPorNombre: row.resuelto_por_nombre,
     }));
   }
 

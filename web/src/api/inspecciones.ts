@@ -28,6 +28,9 @@ export interface InspectionAnswer {
   fechaCompromiso: string | null;
   fechaControl: string | null;
   responsable: string | null;
+  resuelto: boolean;
+  resueltoAt: string | null;
+  resueltoPorNombre: string | null;
 }
 
 export interface InspectionSummary {
@@ -92,4 +95,12 @@ export const inspeccionesApi = {
   /** URL para pedir la imagen vía fetch con el token (un <img src> directo no lo enviaría). */
   evidenciaEndpoint: (inspectionId: string, templateItemId: string) =>
     `/inspecciones/${inspectionId}/respuestas/${templateItemId}/evidencia`,
+
+  resolverHallazgo: (inspectionId: string, templateItemId: string, resuelto: boolean) =>
+    http
+      .patch<InspectionAnswer>(
+        `/inspecciones/${inspectionId}/respuestas/${templateItemId}/resolver`,
+        { resuelto },
+      )
+      .then((r) => r.data),
 };

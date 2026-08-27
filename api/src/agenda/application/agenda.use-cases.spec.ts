@@ -126,6 +126,9 @@ class FakeInspectionRepo implements InspectionRepositoryPort {
   async getEvidenciaStorageKey(): Promise<never> {
     throw new Error('no usado');
   }
+  async setResuelto(): Promise<never> {
+    throw new Error('no usado');
+  }
 }
 
 describe('ListScheduleUseCase', () => {

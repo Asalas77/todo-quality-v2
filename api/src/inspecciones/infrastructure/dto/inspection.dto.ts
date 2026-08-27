@@ -2,6 +2,7 @@ import { Transform, Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsOptional,
@@ -65,6 +66,11 @@ export class AnswerDto {
   @Length(0, 200)
   @Transform(trim)
   responsable?: string;
+}
+
+export class ResolveFindingDto {
+  @IsBoolean()
+  resuelto!: boolean;
 }
 
 export class SaveAnswersDto {

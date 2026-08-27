@@ -22,6 +22,8 @@ import {
 import { AxiosError } from 'axios';
 import PrintIcon from '@mui/icons-material/Print';
 import DownloadIcon from '@mui/icons-material/Download';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ReplayIcon from '@mui/icons-material/Replay';
 import { MainLayout } from '../components/MainLayout';
 import { EvidenciaFoto } from '../components/EvidenciaFoto';
 import { InspeccionPrintView } from '../components/InspeccionPrintView';
@@ -62,6 +64,7 @@ export function CompletarInspeccionPage() {
   const { id } = useParams<{ id: string }>();
   const { hasPermission } = useAuth();
   const canEdit = hasPermission('inspecciones.completar');
+  const canResolve = hasPermission('inspecciones.ver_todas');
   const queryClient = useQueryClient();
 
   const { data: inspection, isLoading, isError, error } = useQuery({
@@ -97,6 +100,25 @@ export function CompletarInspeccionPage() {
       queryClient.setQueryData(['inspeccion', id], updated);
       queryClient.invalidateQueries({ queryKey: ['inspecciones'] });
       setSuccessMessage('Avance guardado.');
+    },
+  });
+
+  const resolverMutation = useMutation({
+    mutationFn: ({ templateItemId, resuelto }: { templateItemId: string; resuelto: boolean }) =>
+      inspeccionesApi.resolverHallazgo(id!, templateItemId, resuelto),
+    onSuccess: (updatedAnswer) => {
+      queryClient.setQueryData(['inspeccion', id], (prev: typeof inspection) =>
+        prev
+          ? {
+              ...prev,
+              answers: prev.answers.map((a) =>
+                a.templateItemId === updatedAnswer.templateItemId ? updatedAnswer : a,
+              ),
+            }
+          : prev,
+      );
+      queryClient.invalidateQueries({ queryKey: ['reportes-hallazgos'] });
+      queryClient.invalidateQueries({ queryKey: ['reportes-resumen'] });
     },
   });
 
@@ -324,6 +346,41 @@ export function CompletarInspeccionPage() {
                       hasEvidencia={!!item.evidenciaUrl}
                       canEdit={canEdit}
                     />
+
+                    <Divider />
+                    <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                      <Box>
+                        {item.resuelto ? (
+                          <>
+                            <Chip icon={<CheckCircleIcon />} label="Resuelto" color="success" size="small" />
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                              Por {item.resueltoPorNombre} ·{' '}
+                              {item.resueltoAt && new Date(item.resueltoAt).toLocaleString()}
+                            </Typography>
+                          </>
+                        ) : (
+                          <Chip label="Sin resolver" size="small" />
+                        )}
+                      </Box>
+                      {canResolve && (
+                        <Button
+                          size="small"
+                          startIcon={item.resuelto ? <ReplayIcon /> : <CheckCircleIcon />}
+                          disabled={
+                            resolverMutation.isPending &&
+                            resolverMutation.variables?.templateItemId === item.templateItemId
+                          }
+                          onClick={() =>
+                            resolverMutation.mutate({
+                              templateItemId: item.templateItemId,
+                              resuelto: !item.resuelto,
+                            })
+                          }
+                        >
+                          {item.resuelto ? 'Reabrir' : 'Marcar resuelto'}
+                        </Button>
+                      )}
+                    </Stack>
                   </Stack>
                 )}
 
