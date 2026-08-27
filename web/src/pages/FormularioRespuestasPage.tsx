@@ -20,10 +20,12 @@ import {
   Typography,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import PrintIcon from '@mui/icons-material/Print';
 import { formulariosApi } from '../api/formularios';
 import { http } from '../api/http';
 import { MainLayout } from '../components/MainLayout';
 import { PageLoader } from '../components/PageLoader';
+import { FormularioRespuestaPrintView } from '../components/FormularioRespuestaPrintView';
 
 async function openArchivo(responseId: string, campoId: string) {
   const { data } = await http.get(formulariosApi.archivoEndpoint(responseId, campoId), {
@@ -90,7 +92,7 @@ export function FormularioRespuestasPage() {
 
   return (
     <MainLayout>
-      <Card sx={{ p: 3 }}>
+      <Card sx={{ p: 3 }} className="no-print">
         <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
           <Typography variant="h5">Respuestas: {form?.nombre ?? '…'}</Typography>
           <Link component={RouterLink} to="/agenda">
@@ -139,8 +141,25 @@ export function FormularioRespuestasPage() {
         )}
       </Card>
 
-      <Dialog open={!!openResponseId} onClose={() => setOpenResponseId(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>Respuesta</DialogTitle>
+      <Dialog
+        open={!!openResponseId}
+        onClose={() => setOpenResponseId(null)}
+        maxWidth="sm"
+        fullWidth
+        className="no-print"
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          Respuesta: {form?.nombre ?? '…'}
+          {responseDetail && !isResponseError && (
+            <Button
+              size="small"
+              startIcon={<PrintIcon fontSize="small" />}
+              onClick={() => window.print()}
+            >
+              Imprimir / Exportar
+            </Button>
+          )}
+        </DialogTitle>
         <DialogContent>
           {isResponseError ? (
             <Typography color="error" sx={{ py: 2 }}>
@@ -152,11 +171,28 @@ export function FormularioRespuestasPage() {
             </Box>
           ) : (
             <Stack spacing={2} sx={{ mt: 1 }}>
-              <Box sx={{ pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
-                <Typography variant="body2" color="text.secondary">
-                  {new Date(responseDetail.createdAt).toLocaleString()} ·{' '}
-                  {responseDetail.centroNombre ?? 'Sin centro'} ·{' '}
+              <Box
+                sx={{
+                  pb: 1.5,
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                  display: 'grid',
+                  gridTemplateColumns: 'auto 1fr',
+                  columnGap: 1.5,
+                  rowGap: 0.5,
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">Centro</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {responseDetail.centroNombre ?? 'Sin centro'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">Completado por</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {responseDetail.creadoPorNombre}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">Fecha</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {new Date(responseDetail.createdAt).toLocaleString()}
                 </Typography>
               </Box>
               {responseDetail.valores.map((valor) => (
@@ -182,6 +218,13 @@ export function FormularioRespuestasPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {responseDetail && !isResponseError && (
+        <FormularioRespuestaPrintView
+          response={responseDetail}
+          formNombre={form?.nombre ?? ''}
+        />
+      )}
     </MainLayout>
   );
 }

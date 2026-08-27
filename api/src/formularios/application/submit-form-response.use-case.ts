@@ -45,9 +45,19 @@ export class SubmitFormResponseUseCase {
       );
     }
 
+    // El frontend de "completar desde agenda" no manda centroId (solo conoce el
+    // scheduleId): sin esto la respuesta queda con centro_id NULL y desaparece de la
+    // Agenda en cuanto hay un centro seleccionado en el filtro, porque `= NULL` nunca
+    // matchea. La programación es la fuente de verdad del centro en ese flujo.
+    let centroId = command.centroId;
+    if (command.scheduleId && !centroId) {
+      const schedule = await this.schedules.findById(command.scheduleId);
+      centroId = schedule?.centroId ?? centroId;
+    }
+
     const respuesta = await this.responses.submit({
       formId: command.formId,
-      centroId: command.centroId,
+      centroId,
       creadoPor: command.creadoPor,
       valores: command.valores,
     });
