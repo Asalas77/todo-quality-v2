@@ -15,10 +15,10 @@ export function AuthBackground({ children }: { children: ReactNode }) {
         gap: 4,
         py: 6,
         px: 2,
-        background:
+        background: (theme) =>
           'radial-gradient(circle at 15% 15%, rgba(0, 78, 137, 0.10), transparent 45%), ' +
           'radial-gradient(circle at 85% 85%, rgba(249, 115, 22, 0.10), transparent 45%), ' +
-          '#F4F6F9',
+          theme.palette.background.default,
       }}
     >
       <Logo size={40} />

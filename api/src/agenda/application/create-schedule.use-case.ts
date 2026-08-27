@@ -3,6 +3,7 @@ import {
   CreateScheduleInput,
   SCHEDULE_REPOSITORY,
   Schedule,
+  ScheduleAssigneeInvalidError,
   ScheduleCentroInactiveError,
   ScheduleRepositoryPort,
   ScheduleTemplateInactiveError,
@@ -20,7 +21,8 @@ export class CreateScheduleUseCase {
     } catch (error) {
       if (
         error instanceof ScheduleTemplateInactiveError ||
-        error instanceof ScheduleCentroInactiveError
+        error instanceof ScheduleCentroInactiveError ||
+        error instanceof ScheduleAssigneeInvalidError
       ) {
         throw new ConflictException(error.message);
       }

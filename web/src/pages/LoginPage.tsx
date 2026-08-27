@@ -57,7 +57,7 @@ export function LoginPage() {
     setServerError(null);
     try {
       await login(values);
-      const from = (location.state as { from?: Location })?.from?.pathname ?? '/inicio';
+      const from = (location.state as { from?: Location })?.from?.pathname ?? '/';
       navigate(from, { replace: true });
     } catch (error) {
       const status = (error as AxiosError).response?.status;

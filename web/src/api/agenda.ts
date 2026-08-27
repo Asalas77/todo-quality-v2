@@ -36,12 +36,14 @@ export interface CreateScheduleInput {
   templateId?: string;
   formId?: string;
   centroId: string;
+  /** Si se omite, la programación queda a nombre de quien la crea. */
+  asignadoA?: string;
   fecha: string;
   asunto?: string;
 }
 
 export const agendaApi = {
-  list: (filter: { estado?: ScheduleStatus; centroId?: string } = {}) =>
+  list: (filter: { estado?: ScheduleStatus; centroId?: string; soloMios?: boolean } = {}) =>
     http.get<Schedule[]>('/agenda', { params: filter }).then((r) => r.data),
 
   create: (input: CreateScheduleInput) =>

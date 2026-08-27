@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ListInspectionsUseCase } from './list-inspections.use-case';
 import { GetInspectionUseCase } from './get-inspection.use-case';
 import { StartInspectionUseCase } from './start-inspection.use-case';
@@ -60,6 +65,7 @@ class FakeInspectionRepo implements InspectionRepositoryPort {
     return this.inspections
       .filter((i) => !filter.estado || i.estado === filter.estado)
       .filter((i) => !filter.centroId || i.centroId === filter.centroId)
+      .filter((i) => !filter.inspectorId || i.inspectorId === filter.inspectorId)
       .map(toSummary);
   }
 
@@ -153,6 +159,8 @@ describe('SaveInspectionAnswersUseCase', () => {
     const result = await useCase.execute({
       inspectionId: 'insp-1',
       answers: [{ templateItemId: 'item-1', estado: 'CUMPLE' }],
+      requestedBy: 'user-1',
+      canViewAll: false,
     });
 
     expect(result.estado).toBe('CONFORME');
@@ -167,6 +175,8 @@ describe('SaveInspectionAnswersUseCase', () => {
       useCase.execute({
         inspectionId: 'insp-1',
         answers: [{ templateItemId: 'item-1', estado: 'NO_CUMPLE' }],
+        requestedBy: 'user-1',
+        canViewAll: false,
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
@@ -188,6 +198,8 @@ describe('SaveInspectionAnswersUseCase', () => {
           responsable: 'Jefe de turno',
         },
       ],
+      requestedBy: 'user-1',
+      canViewAll: false,
     });
 
     expect(result.estado).toBe('NO_CONFORME');
@@ -201,8 +213,40 @@ describe('SaveInspectionAnswersUseCase', () => {
       useCase.execute({
         inspectionId: 'no-existe',
         answers: [{ templateItemId: 'item-1', estado: 'CUMPLE' }],
+        requestedBy: 'user-1',
+        canViewAll: false,
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rechaza con 403 modificar una inspección que no es propia sin ver_todas', async () => {
+    const repo = new FakeInspectionRepo();
+    repo.inspections = [buildInspection({ inspectorId: 'user-1' })];
+    const useCase = new SaveInspectionAnswersUseCase(repo);
+
+    await expect(
+      useCase.execute({
+        inspectionId: 'insp-1',
+        answers: [{ templateItemId: 'item-1', estado: 'CUMPLE' }],
+        requestedBy: 'otro-user',
+        canViewAll: false,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('permite modificar una inspección ajena si tiene inspecciones.ver_todas', async () => {
+    const repo = new FakeInspectionRepo();
+    repo.inspections = [buildInspection({ inspectorId: 'user-1' })];
+    const useCase = new SaveInspectionAnswersUseCase(repo);
+
+    const result = await useCase.execute({
+      inspectionId: 'insp-1',
+      answers: [{ templateItemId: 'item-1', estado: 'CUMPLE' }],
+      requestedBy: 'supervisor-1',
+      canViewAll: true,
+    });
+
+    expect(result.estado).toBe('CONFORME');
   });
 });
 
@@ -215,15 +259,44 @@ describe('ListInspectionsUseCase / GetInspectionUseCase', () => {
     ];
     const useCase = new ListInspectionsUseCase(repo);
 
-    expect(await useCase.execute({ estado: 'CONFORME' })).toHaveLength(1);
-    expect(await useCase.execute({ centroId: 'b' })).toHaveLength(1);
-    expect(await useCase.execute({})).toHaveLength(2);
+    expect(
+      await useCase.execute({ estado: 'CONFORME', requestedBy: 'user-1', canViewAll: true }),
+    ).toHaveLength(1);
+    expect(
+      await useCase.execute({ centroId: 'b', requestedBy: 'user-1', canViewAll: true }),
+    ).toHaveLength(1);
+    expect(await useCase.execute({ requestedBy: 'user-1', canViewAll: true })).toHaveLength(2);
+  });
+
+  it('sin ver_todas, solo lista las inspecciones propias', async () => {
+    const repo = new FakeInspectionRepo();
+    repo.inspections = [
+      buildInspection({ id: '1', inspectorId: 'user-1' }),
+      buildInspection({ id: '2', inspectorId: 'otro-user' }),
+    ];
+    const useCase = new ListInspectionsUseCase(repo);
+
+    const result = await useCase.execute({ requestedBy: 'user-1', canViewAll: false });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('1');
   });
 
   it('devuelve 404 si la inspección no existe', async () => {
     const repo = new FakeInspectionRepo();
     const useCase = new GetInspectionUseCase(repo);
 
-    await expect(useCase.execute('no-existe')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      useCase.execute({ id: 'no-existe', requestedBy: 'user-1', canViewAll: true }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rechaza con 403 ver una inspección ajena sin ver_todas', async () => {
+    const repo = new FakeInspectionRepo();
+    repo.inspections = [buildInspection({ id: '1', inspectorId: 'user-1' })];
+    const useCase = new GetInspectionUseCase(repo);
+
+    await expect(
+      useCase.execute({ id: '1', requestedBy: 'otro-user', canViewAll: false }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });

@@ -227,6 +227,30 @@
   .btn-ghost:hover { border-color: var(--brand); color: var(--brand); }
   .btn-sm { padding: 8px 14px; font-size: 13.5px; }
 
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 10px;
+    border: 1px solid var(--line-cool);
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .theme-toggle:hover { border-color: var(--brand); color: var(--brand); }
+  .theme-toggle svg { width: 18px; height: 18px; stroke: currentColor; }
+  .theme-toggle .ic-moon { display: none; }
+  :root[data-theme="dark"] .theme-toggle .ic-sun { display: none; }
+  :root[data-theme="dark"] .theme-toggle .ic-moon { display: block; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .theme-toggle .ic-sun { display: none; }
+    :root:not([data-theme="light"]) .theme-toggle .ic-moon { display: block; }
+  }
+
   /* ============ HERO ============ */
   .hero {
     padding: 84px 0 96px;
@@ -656,7 +680,13 @@
       <a href="#como-funciona">Cómo funciona</a>
       <a href="#seguridad">Seguridad</a>
     </div>
-    <a class="btn btn-primary btn-sm" href="#cta">Ver una demo</a>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Cambiar a modo oscuro" title="Modo claro / oscuro">
+        <svg class="ic-sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke-width="1.8"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg class="ic-moon" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 119.5 4a7 7 0 1010.5 10.5z" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      </button>
+      <a class="btn btn-primary btn-sm" href="#cta">Ver una demo</a>
+    </div>
   </div>
 </nav>
 
@@ -821,7 +851,7 @@
             <div class="module-code">MOD·04</div>
             <h3>Agenda</h3>
           </div>
-          <p>Programa quién inspecciona qué centro y cuándo. Nadie parte una inspección desde cero.</p>
+          <p>Programa qué se inspecciona, en qué centro y quién es el responsable. Cada quien puede filtrar y ver solo lo suyo.</p>
         </div>
 
         <div class="module-card">
@@ -839,7 +869,7 @@
             <div class="module-code">MOD·06</div>
             <h3>Formularios</h3>
           </div>
-          <p>Para lo que no es checklist: recepción de mercadería, registros libres, campos a tu medida.</p>
+          <p>Para lo que no es checklist: temperatura de cámaras de frío, recepción de mercadería, registros libres — con foto directo desde la cámara del celular en cada campo que la necesite.</p>
         </div>
 
         <div class="module-card">
@@ -1020,6 +1050,31 @@
 </footer>
 
 <script>
+  (function () {
+    var KEY = 'kontrol-landing-theme';
+    var root = document.documentElement;
+    var toggle = document.getElementById('themeToggle');
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) {}
+    if (stored === 'light' || stored === 'dark') root.setAttribute('data-theme', stored);
+
+    function current() {
+      var attr = root.getAttribute('data-theme');
+      if (attr === 'light' || attr === 'dark') return attr;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    if (toggle) {
+      toggle.addEventListener('click', function () {
+        var next = current() === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        toggle.setAttribute('aria-label', next === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+        try { localStorage.setItem(KEY, next); } catch (e) {}
+      });
+      toggle.setAttribute('aria-label', current() === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+    }
+  })();
+
   (function () {
     var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var els = document.querySelectorAll('.reveal');

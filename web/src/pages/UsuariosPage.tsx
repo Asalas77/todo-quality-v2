@@ -25,6 +25,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import { AxiosError } from 'axios';
 import { MainLayout } from '../components/MainLayout';
+import { PageLoader } from '../components/PageLoader';
 import { UserFormDialog } from '../components/UserFormDialog';
 import { TemporaryPasswordDialog } from '../components/TemporaryPasswordDialog';
 import { usuariosApi } from '../api/usuarios';
@@ -150,6 +151,9 @@ export function UsuariosPage() {
           label="Incluir inactivos"
         />
 
+        {isLoading ? (
+          <PageLoader />
+        ) : (
         <Box sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
@@ -163,7 +167,7 @@ export function UsuariosPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {!isLoading && users.length === 0 && (
+            {users.length === 0 && (
               <TableRow>
                 <TableCell colSpan={canManage ? 6 : 5}>
                   <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
@@ -225,6 +229,7 @@ export function UsuariosPage() {
           </TableBody>
         </Table>
         </Box>
+        )}
       </Card>
 
       <UserFormDialog

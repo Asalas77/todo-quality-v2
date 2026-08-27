@@ -8,11 +8,13 @@ import {
   Card,
   Chip,
   FormControl,
+  FormControlLabel,
   InputLabel,
   MenuItem,
   Select,
   Snackbar,
   Stack,
+  Switch,
   Tab,
   Tabs,
   Table,
@@ -29,6 +31,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { AxiosError } from 'axios';
 import { MainLayout } from '../components/MainLayout';
+import { PageLoader } from '../components/PageLoader';
 import { CreateScheduleDialog } from '../components/CreateScheduleDialog';
 import { StartInspectionDialog } from '../components/StartInspectionDialog';
 import { AgendaCalendar } from '../components/AgendaCalendar';
@@ -37,6 +40,7 @@ import { agendaApi, SCHEDULE_ESTADO_LABEL } from '../api/agenda';
 import type { Schedule, ScheduleStatus } from '../api/agenda';
 import { inspeccionesApi, ESTADO_LABEL } from '../api/inspecciones';
 import type { InspectionStatus } from '../api/inspecciones';
+import { centrosApi } from '../api/centros';
 import { useAuth } from '../context/AuthContext';
 
 type ViewMode = 'calendario' | 'lista' | 'kanban';
@@ -60,30 +64,46 @@ export function AgendaPage() {
     hasPermission('inspecciones.completar') || hasPermission('formularios.completar');
   const canStart = hasPermission('inspecciones.completar');
   const canCompleteForms = hasPermission('formularios.completar');
+  // Sin este permiso la agenda ya solo muestra lo propio de por sí — el switch no
+  // aportaría nada, así que ni se ofrece.
+  const canViewAll = hasPermission('agenda.ver_todas');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [view, setView] = useState<ViewMode>('calendario');
   const [estadoFilter, setEstadoFilter] = useState<ScheduleStatus | ''>('PENDIENTE');
+  const [centroFilter, setCentroFilter] = useState('');
+  const [soloMios, setSoloMios] = useState(false);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [startDialogOpen, setStartDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Calendario y Kanban necesitan el panorama completo (sin filtro), no solo lo pendiente.
-  const { data: allSchedule = [] } = useQuery({
-    queryKey: ['agenda', ''],
-    queryFn: () => agendaApi.list({}),
+  const { data: centros = [] } = useQuery({
+    queryKey: ['centros', false],
+    queryFn: () => centrosApi.list(false),
+  });
+
+  // Calendario y Kanban necesitan el panorama completo (sin filtro de estado), no solo lo
+  // pendiente — pero sí respetan el filtro de centro y el de "asignados a mí".
+  const { data: allSchedule = [], isLoading: loadingAllSchedule } = useQuery({
+    queryKey: ['agenda', '', centroFilter, soloMios],
+    queryFn: () => agendaApi.list({ centroId: centroFilter || undefined, soloMios }),
   });
 
   const { data: filteredSchedule = [], isLoading: loadingSchedule } = useQuery({
-    queryKey: ['agenda', estadoFilter],
-    queryFn: () => agendaApi.list(estadoFilter ? { estado: estadoFilter } : {}),
+    queryKey: ['agenda', estadoFilter, centroFilter, soloMios],
+    queryFn: () =>
+      agendaApi.list({
+        estado: estadoFilter || undefined,
+        centroId: centroFilter || undefined,
+        soloMios,
+      }),
     enabled: view === 'lista',
   });
 
   const { data: inspections = [], isLoading: loadingInspections } = useQuery({
-    queryKey: ['inspecciones', ''],
-    queryFn: () => inspeccionesApi.list({}),
+    queryKey: ['inspecciones', '', centroFilter],
+    queryFn: () => inspeccionesApi.list(centroFilter ? { centroId: centroFilter } : {}),
   });
 
   const pendingSchedule = useMemo(
@@ -112,6 +132,7 @@ export function AgendaPage() {
   });
 
   const handleStartSchedule = (item: Schedule) => startMutation.mutate(item.id);
+  const loadingOverview = loadingAllSchedule || loadingInspections;
 
   return (
     <MainLayout>
@@ -145,20 +166,56 @@ export function AgendaPage() {
           <Tab value="kanban" label="Kanban" />
         </Tabs>
 
+        <Stack direction="row" spacing={2} sx={{ mb: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel id="agenda-centro-label">Centro</InputLabel>
+            <Select
+              labelId="agenda-centro-label"
+              label="Centro"
+              value={centroFilter}
+              onChange={(e) => setCentroFilter(e.target.value)}
+            >
+              <MenuItem value="">Todos los centros</MenuItem>
+              {centros.map((c) => (
+                <MenuItem key={c.id} value={c.id}>
+                  {c.nombre}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {canViewAll && (
+            <FormControlLabel
+              control={
+                <Switch checked={soloMios} onChange={(e) => setSoloMios(e.target.checked)} />
+              }
+              label="Solo pendientes asignados a mí"
+            />
+          )}
+        </Stack>
+
         {view === 'calendario' && (
-          <AgendaCalendar
-            pendingSchedule={pendingSchedule}
-            inspections={inspections}
-            onStartSchedule={handleStartSchedule}
-          />
+          loadingOverview ? (
+            <PageLoader />
+          ) : (
+            <AgendaCalendar
+              pendingSchedule={pendingSchedule}
+              inspections={inspections}
+              onStartSchedule={handleStartSchedule}
+            />
+          )
         )}
 
         {view === 'kanban' && (
-          <AgendaKanban
-            pendingSchedule={pendingSchedule}
-            inspections={inspections}
-            onStartSchedule={handleStartSchedule}
-          />
+          loadingOverview ? (
+            <PageLoader />
+          ) : (
+            <AgendaKanban
+              pendingSchedule={pendingSchedule}
+              inspections={inspections}
+              onStartSchedule={handleStartSchedule}
+            />
+          )
         )}
 
         {view === 'lista' && (
@@ -180,6 +237,9 @@ export function AgendaPage() {
               </Select>
             </FormControl>
 
+            {loadingSchedule ? (
+              <PageLoader minHeight={160} />
+            ) : (
             <Box sx={{ overflowX: 'auto' }}>
             <Table size="small" sx={{ mb: 4 }}>
               <TableHead>
@@ -195,7 +255,7 @@ export function AgendaPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {!loadingSchedule && filteredSchedule.length === 0 && (
+                {filteredSchedule.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8}>
                       <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
@@ -285,10 +345,14 @@ export function AgendaPage() {
               </TableBody>
             </Table>
             </Box>
+            )}
 
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
               Inspecciones completadas
             </Typography>
+            {loadingInspections ? (
+              <PageLoader minHeight={160} />
+            ) : (
             <Box sx={{ overflowX: 'auto' }}>
             <Table size="small">
               <TableHead>
@@ -301,7 +365,7 @@ export function AgendaPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {!loadingInspections && inspections.length === 0 && (
+                {inspections.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5}>
                       <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
@@ -333,6 +397,7 @@ export function AgendaPage() {
               </TableBody>
             </Table>
             </Box>
+            )}
           </>
         )}
       </Card>

@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
   AnswerNotFoundError,
   INSPECTION_REPOSITORY,
@@ -11,6 +11,13 @@ import {
   StoredEvidence,
 } from '../domain/ports/evidence-storage.port';
 
+export interface GetEvidenceQuery {
+  inspectionId: string;
+  templateItemId: string;
+  requestedBy: string;
+  canViewAll: boolean;
+}
+
 @Injectable()
 export class GetEvidenceUseCase {
   constructor(
@@ -18,10 +25,19 @@ export class GetEvidenceUseCase {
     @Inject(EVIDENCE_STORAGE) private readonly storage: EvidenceStoragePort,
   ) {}
 
-  async execute(inspectionId: string, templateItemId: string): Promise<StoredEvidence> {
+  async execute(query: GetEvidenceQuery): Promise<StoredEvidence> {
+    const inspection = await this.inspections.findById(query.inspectionId);
+    if (!inspection) throw new NotFoundException('La inspección no existe');
+    if (!query.canViewAll && inspection.inspectorId !== query.requestedBy) {
+      throw new ForbiddenException('No tienes permiso para ver esta inspección');
+    }
+
     let storageKey: string | null;
     try {
-      storageKey = await this.inspections.getEvidenciaStorageKey(inspectionId, templateItemId);
+      storageKey = await this.inspections.getEvidenciaStorageKey(
+        query.inspectionId,
+        query.templateItemId,
+      );
     } catch (error) {
       if (error instanceof AnswerNotFoundError) {
         throw new NotFoundException(error.message);

@@ -1,8 +1,18 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Chip, IconButton, Stack, Typography } from '@mui/material';
+import {
+  Box,
+  Chip,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Stack,
+  Typography,
+} from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import CloseIcon from '@mui/icons-material/Close';
 import type { InspectionStatus, InspectionSummary } from '../api/inspecciones';
 import { ESTADO_LABEL } from '../api/inspecciones';
 import type { Schedule } from '../api/agenda';
@@ -58,20 +68,21 @@ export function AgendaCalendar({ pendingSchedule, inspections, onStartSchedule }
   const navigate = useNavigate();
   const today = useMemo(() => new Date(), []);
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   const entries = useMemo<CalendarEntry[]>(() => {
     const scheduleEntries: CalendarEntry[] = pendingSchedule.map((item) => ({
       kind: 'schedule',
       id: item.id,
       fecha: item.fecha,
-      label: `${item.templateNombre} · ${item.centroNombre}`,
+      label: `${item.templateNombre} · ${item.centroNombre} · ${item.asignadoNombre}`,
       schedule: item,
     }));
     const inspectionEntries: CalendarEntry[] = inspections.map((inspection) => ({
       kind: 'inspection',
       id: inspection.id,
       fecha: inspection.fecha,
-      label: `${inspection.templateNombre} · ${inspection.centroNombre}`,
+      label: `${inspection.templateNombre} · ${inspection.centroNombre} · ${inspection.inspectorNombre}`,
       estado: inspection.estado,
     }));
     return [...scheduleEntries, ...inspectionEntries];
@@ -91,6 +102,7 @@ export function AgendaCalendar({ pendingSchedule, inspections, onStartSchedule }
   const todayKey = toDateKey(today);
 
   const handleEntryClick = (entry: CalendarEntry) => {
+    setSelectedDay(null);
     if (entry.kind === 'inspection') {
       navigate(`/inspecciones/${entry.id}`);
       return;
@@ -101,6 +113,9 @@ export function AgendaCalendar({ pendingSchedule, inspections, onStartSchedule }
     }
     onStartSchedule(entry.schedule);
   };
+
+  const selectedDayKey = selectedDay ? toDateKey(selectedDay) : null;
+  const selectedDayEntries = selectedDayKey ? (byDate.get(selectedDayKey) ?? []) : [];
 
   return (
     <Box>
@@ -133,6 +148,7 @@ export function AgendaCalendar({ pendingSchedule, inspections, onStartSchedule }
           return (
             <Box
               key={key}
+              onClick={() => dayEntries.length > 0 && setSelectedDay(day)}
               sx={{
                 minWidth: 0,
                 minHeight: { xs: 64, sm: 92 },
@@ -142,6 +158,8 @@ export function AgendaCalendar({ pendingSchedule, inspections, onStartSchedule }
                 borderRadius: 1,
                 bgcolor: inMonth ? 'background.paper' : 'grey.50',
                 opacity: inMonth ? 1 : 0.5,
+                cursor: dayEntries.length > 0 ? 'pointer' : 'default',
+                '&:hover': dayEntries.length > 0 ? { borderColor: 'primary.main' } : undefined,
               }}
             >
               <Typography
@@ -159,7 +177,10 @@ export function AgendaCalendar({ pendingSchedule, inspections, onStartSchedule }
                     key={`${entry.kind}-${entry.id}`}
                     size="small"
                     label={entry.label}
-                    onClick={() => handleEntryClick(entry)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEntryClick(entry);
+                    }}
                     sx={{
                       height: 18,
                       maxWidth: '100%',
@@ -196,6 +217,53 @@ export function AgendaCalendar({ pendingSchedule, inspections, onStartSchedule }
           </Stack>
         ))}
       </Stack>
+
+      <Dialog open={!!selectedDay} onClose={() => setSelectedDay(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {selectedDay &&
+            `${selectedDay.getDate()} de ${MESES[selectedDay.getMonth()].toLowerCase()} de ${selectedDay.getFullYear()}`}
+          <IconButton size="small" onClick={() => setSelectedDay(null)}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={1}>
+            {selectedDayEntries.length === 0 && (
+              <Typography variant="body2" color="text.secondary">
+                Sin eventos este día.
+              </Typography>
+            )}
+            {selectedDayEntries.map((entry) => (
+              <Box
+                key={`${entry.kind}-${entry.id}`}
+                onClick={() => handleEntryClick(entry)}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  p: 1,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: 'action.hover' },
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    flexShrink: 0,
+                    bgcolor: DOT_COLOR[entry.kind === 'schedule' ? 'PENDIENTE' : entry.estado],
+                  }}
+                />
+                <Typography variant="body2">{entry.label}</Typography>
+              </Box>
+            ))}
+          </Stack>
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

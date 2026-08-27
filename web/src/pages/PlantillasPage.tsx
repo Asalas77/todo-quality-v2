@@ -31,6 +31,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { AxiosError } from 'axios';
 import { MainLayout } from '../components/MainLayout';
+import { PageLoader } from '../components/PageLoader';
 import { PlantillaFormDialog } from '../components/PlantillaFormDialog';
 import { FormBuilderDialog } from '../components/FormBuilderDialog';
 import { FormBuilderDialogV2 } from '../components/FormBuilderDialogV2';
@@ -258,6 +259,9 @@ export function PlantillasPage() {
           />
         </Stack>
 
+        {isLoading ? (
+          <PageLoader />
+        ) : (
         <Box sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
@@ -272,7 +276,7 @@ export function PlantillasPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {!isLoading && filtered.length === 0 && (
+            {filtered.length === 0 && (
               <TableRow>
                 <TableCell colSpan={7}>
                   <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
@@ -398,6 +402,7 @@ export function PlantillasPage() {
           </TableBody>
         </Table>
         </Box>
+        )}
       </Card>
 
       <PlantillaFormDialog

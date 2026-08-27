@@ -4,6 +4,7 @@ import {
   CreateScheduleInput,
   ListScheduleFilter,
   Schedule,
+  ScheduleAssigneeInvalidError,
   ScheduleCentroInactiveError,
   ScheduleNotFoundError,
   ScheduleNotPendingError,
@@ -127,6 +128,12 @@ export class PostgresScheduleRepository implements ScheduleRepositoryPort {
         [input.centroId],
       );
       if (!centroRows[0]?.activo) throw new ScheduleCentroInactiveError();
+
+      const assigneeRows = await manager.query<Array<{ activo: boolean }>>(
+        'SELECT activo FROM app_user WHERE id = $1',
+        [input.asignadoA],
+      );
+      if (!assigneeRows[0]?.activo) throw new ScheduleAssigneeInvalidError();
 
       const inserted = await manager.query<Array<{ id: string }>>(
         `INSERT INTO schedule (tenant_id, template_id, form_id, centro_id, asignado_a, asunto, fecha)

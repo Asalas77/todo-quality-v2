@@ -1,4 +1,10 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   AnswerNotFoundError,
   INSPECTION_REPOSITORY,
@@ -12,6 +18,8 @@ export interface UploadEvidenceCommand {
   templateItemId: string;
   buffer: Buffer;
   mimeType: string;
+  requestedBy: string;
+  canViewAll: boolean;
 }
 
 const EXTENSION_BY_MIME: Record<string, string> = {
@@ -34,6 +42,12 @@ export class UploadEvidenceUseCase {
       throw new BadRequestException(
         'Formato de imagen no admitido. Usa JPEG, PNG, WEBP o HEIC.',
       );
+    }
+
+    const inspection = await this.inspections.findById(command.inspectionId);
+    if (!inspection) throw new NotFoundException('La inspección no existe');
+    if (!command.canViewAll && inspection.inspectorId !== command.requestedBy) {
+      throw new ForbiddenException('No puedes modificar una inspección que no te pertenece');
     }
 
     const tenantId = requireTenantId();

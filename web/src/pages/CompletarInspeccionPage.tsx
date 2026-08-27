@@ -64,10 +64,11 @@ export function CompletarInspeccionPage() {
   const canEdit = hasPermission('inspecciones.completar');
   const queryClient = useQueryClient();
 
-  const { data: inspection, isLoading } = useQuery({
+  const { data: inspection, isLoading, isError, error } = useQuery({
     queryKey: ['inspeccion', id],
     queryFn: () => inspeccionesApi.get(id!),
     enabled: !!id,
+    retry: false,
   });
 
   const [answers, setAnswers] = useState<Record<string, LocalAnswer>>({});
@@ -159,6 +160,21 @@ export function CompletarInspeccionPage() {
       },
     });
   };
+
+  if (isError) {
+    const status = (error as AxiosError).response?.status;
+    return (
+      <MainLayout>
+        <Alert severity="error">
+          {status === 403
+            ? 'No tienes permiso para ver esta inspección.'
+            : status === 404
+              ? 'La inspección no existe.'
+              : 'No se pudo cargar la inspección.'}
+        </Alert>
+      </MainLayout>
+    );
+  }
 
   if (isLoading || !inspection) {
     return (

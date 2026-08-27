@@ -21,6 +21,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { AxiosError } from 'axios';
 import { MainLayout } from '../components/MainLayout';
+import { PageLoader } from '../components/PageLoader';
 import { RoleFormDialog } from '../components/RoleFormDialog';
 import { rolesApi } from '../api/roles';
 import type { Role } from '../api/roles';
@@ -102,6 +103,9 @@ export function RolesPage() {
           </Button>
         </Stack>
 
+        {isLoading ? (
+          <PageLoader />
+        ) : (
         <Box sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
@@ -114,7 +118,7 @@ export function RolesPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {!isLoading && roles.length === 0 && (
+            {roles.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5}>
                   <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
@@ -153,6 +157,7 @@ export function RolesPage() {
           </TableBody>
         </Table>
         </Box>
+        )}
       </Card>
 
       <RoleFormDialog

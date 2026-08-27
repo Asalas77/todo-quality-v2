@@ -23,6 +23,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import { formulariosApi } from '../api/formularios';
 import { http } from '../api/http';
 import { MainLayout } from '../components/MainLayout';
+import { PageLoader } from '../components/PageLoader';
 
 async function openArchivo(responseId: string, campoId: string) {
   const { data } = await http.get(formulariosApi.archivoEndpoint(responseId, campoId), {
@@ -93,6 +94,9 @@ export function FormularioRespuestasPage() {
           </Link>
         </Stack>
 
+        {isLoading ? (
+          <PageLoader />
+        ) : (
         <Box sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
@@ -104,7 +108,7 @@ export function FormularioRespuestasPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {!isLoading && responses.length === 0 && (
+            {responses.length === 0 && (
               <TableRow>
                 <TableCell colSpan={4}>
                   <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
@@ -128,6 +132,7 @@ export function FormularioRespuestasPage() {
           </TableBody>
         </Table>
         </Box>
+        )}
       </Card>
 
       <Dialog open={!!openResponseId} onClose={() => setOpenResponseId(null)} maxWidth="sm" fullWidth>

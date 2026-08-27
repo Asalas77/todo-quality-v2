@@ -1,8 +1,9 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { UploadEvidenceUseCase } from './upload-evidence.use-case';
 import { GetEvidenceUseCase } from './get-evidence.use-case';
 import {
   AnswerNotFoundError,
+  Inspection,
   InspectionRepositoryPort,
 } from '../domain/ports/inspection-repository.port';
 import {
@@ -12,10 +13,29 @@ import {
 } from '../domain/ports/evidence-storage.port';
 import { tenantContext } from '../../shared/tenant/tenant-context';
 
+const OWNER_ID = 'user-1';
+
 class FakeInspectionRepo implements Partial<InspectionRepositoryPort> {
   evidenceByAnswer = new Map<string, string | null>();
   throwOnSetEvidencia: Error | null = null;
   throwOnGet: Error | null = null;
+
+  async findById(id: string): Promise<Inspection | null> {
+    return {
+      id,
+      templateId: 'tpl-1',
+      templateNombre: 'Higiene diaria',
+      centroId: 'centro-1',
+      centroNombre: 'Planta Norte',
+      inspectorId: OWNER_ID,
+      inspectorNombre: 'Ana Salas',
+      fecha: '2026-01-01',
+      estado: 'BORRADOR',
+      answers: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
 
   async setEvidencia(inspectionId: string, templateItemId: string, storageKey: string) {
     if (this.throwOnSetEvidencia) throw this.throwOnSetEvidencia;
@@ -72,6 +92,8 @@ describe('UploadEvidenceUseCase', () => {
         templateItemId: 'item-1',
         buffer: Buffer.from('foto'),
         mimeType: 'image/jpeg',
+        requestedBy: OWNER_ID,
+        canViewAll: false,
       }),
     );
 
@@ -96,6 +118,8 @@ describe('UploadEvidenceUseCase', () => {
           templateItemId: 'item-1',
           buffer: Buffer.from('x'),
           mimeType: 'application/pdf',
+          requestedBy: OWNER_ID,
+          canViewAll: false,
         }),
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
@@ -117,6 +141,8 @@ describe('UploadEvidenceUseCase', () => {
         templateItemId: 'item-1',
         buffer: Buffer.from('foto1'),
         mimeType: 'image/jpeg',
+        requestedBy: OWNER_ID,
+        canViewAll: false,
       }),
     );
     await runAsTenant('tenant-1', () =>
@@ -125,6 +151,8 @@ describe('UploadEvidenceUseCase', () => {
         templateItemId: 'item-1',
         buffer: Buffer.from('foto2'),
         mimeType: 'image/png',
+        requestedBy: OWNER_ID,
+        canViewAll: false,
       }),
     );
 
@@ -148,6 +176,8 @@ describe('UploadEvidenceUseCase', () => {
           templateItemId: 'no-existe',
           buffer: Buffer.from('foto'),
           mimeType: 'image/jpeg',
+          requestedBy: OWNER_ID,
+          canViewAll: false,
         }),
       ),
     ).rejects.toBeInstanceOf(NotFoundException);
@@ -163,7 +193,12 @@ describe('GetEvidenceUseCase', () => {
     const storage = new FakeEvidenceStorage();
     const useCase = new GetEvidenceUseCase(repo as unknown as InspectionRepositoryPort, storage);
 
-    const result = await useCase.execute('insp-1', 'item-1');
+    const result = await useCase.execute({
+      inspectionId: 'insp-1',
+      templateItemId: 'item-1',
+      requestedBy: OWNER_ID,
+      canViewAll: false,
+    });
     expect(result.path).toBe('/disk/tenant-1/foto.jpg');
   });
 
@@ -172,7 +207,14 @@ describe('GetEvidenceUseCase', () => {
     const storage = new FakeEvidenceStorage();
     const useCase = new GetEvidenceUseCase(repo as unknown as InspectionRepositoryPort, storage);
 
-    await expect(useCase.execute('insp-1', 'item-1')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      useCase.execute({
+        inspectionId: 'insp-1',
+        templateItemId: 'item-1',
+        requestedBy: OWNER_ID,
+        canViewAll: false,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('da 404 si el ítem no existe en la inspección', async () => {
@@ -181,7 +223,14 @@ describe('GetEvidenceUseCase', () => {
     const storage = new FakeEvidenceStorage();
     const useCase = new GetEvidenceUseCase(repo as unknown as InspectionRepositoryPort, storage);
 
-    await expect(useCase.execute('insp-1', 'no-existe')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      useCase.execute({
+        inspectionId: 'insp-1',
+        templateItemId: 'no-existe',
+        requestedBy: OWNER_ID,
+        canViewAll: false,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('da 404 si el archivo referenciado ya no está en disco', async () => {
@@ -191,6 +240,29 @@ describe('GetEvidenceUseCase', () => {
     storage.throwOnRead = new EvidenceNotFoundError();
     const useCase = new GetEvidenceUseCase(repo as unknown as InspectionRepositoryPort, storage);
 
-    await expect(useCase.execute('insp-1', 'item-1')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      useCase.execute({
+        inspectionId: 'insp-1',
+        templateItemId: 'item-1',
+        requestedBy: OWNER_ID,
+        canViewAll: false,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rechaza con 403 ver la evidencia de una inspección ajena sin ver_todas', async () => {
+    const repo = new FakeInspectionRepo();
+    repo.evidenceByAnswer.set('insp-1:item-1', 'tenant-1/foto.jpg');
+    const storage = new FakeEvidenceStorage();
+    const useCase = new GetEvidenceUseCase(repo as unknown as InspectionRepositoryPort, storage);
+
+    await expect(
+      useCase.execute({
+        inspectionId: 'insp-1',
+        templateItemId: 'item-1',
+        requestedBy: 'otro-user',
+        canViewAll: false,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });

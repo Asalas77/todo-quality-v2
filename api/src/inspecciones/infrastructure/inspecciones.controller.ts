@@ -42,16 +42,26 @@ export class InspeccionesController {
   @RequirePermissions('inspecciones.ver')
   @Get()
   list(
+    @Req() req: RequestWithUser,
     @Query('estado') estado?: InspectionStatus,
     @Query('centroId') centroId?: string,
   ) {
-    return this.listInspections.execute({ estado, centroId });
+    return this.listInspections.execute({
+      estado,
+      centroId,
+      requestedBy: req.user!.userId,
+      canViewAll: req.user!.can('inspecciones.ver_todas'),
+    });
   }
 
   @RequirePermissions('inspecciones.ver')
   @Get(':id')
-  get(@Param('id', ParseUUIDPipe) id: string) {
-    return this.getInspection.execute(id);
+  get(@Param('id', ParseUUIDPipe) id: string, @Req() req: RequestWithUser) {
+    return this.getInspection.execute({
+      id,
+      requestedBy: req.user!.userId,
+      canViewAll: req.user!.can('inspecciones.ver_todas'),
+    });
   }
 
   @RequirePermissions('inspecciones.completar')
@@ -70,6 +80,7 @@ export class InspeccionesController {
   saveInspectionAnswers(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: SaveAnswersDto,
+    @Req() req: RequestWithUser,
   ) {
     return this.saveAnswers.execute({
       inspectionId: id,
@@ -82,6 +93,8 @@ export class InspeccionesController {
         fechaControl: a.fechaControl,
         responsable: a.responsable,
       })),
+      requestedBy: req.user!.userId,
+      canViewAll: req.user!.can('inspecciones.ver_todas'),
     });
   }
 
@@ -91,6 +104,7 @@ export class InspeccionesController {
   async uploadItemEvidence(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('itemId', ParseUUIDPipe) itemId: string,
+    @Req() req: RequestWithUser,
     @UploadedFile() file?: Express.Multer.File,
   ): Promise<{ ok: true }> {
     if (!file) {
@@ -102,6 +116,8 @@ export class InspeccionesController {
       templateItemId: itemId,
       buffer: file.buffer,
       mimeType: file.mimetype,
+      requestedBy: req.user!.userId,
+      canViewAll: req.user!.can('inspecciones.ver_todas'),
     });
     return { ok: true };
   }
@@ -116,9 +132,15 @@ export class InspeccionesController {
   async downloadItemEvidence(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('itemId', ParseUUIDPipe) itemId: string,
+    @Req() req: RequestWithUser,
     @Res() res: Response,
   ): Promise<void> {
-    const evidence = await this.getEvidence.execute(id, itemId);
+    const evidence = await this.getEvidence.execute({
+      inspectionId: id,
+      templateItemId: itemId,
+      requestedBy: req.user!.userId,
+      canViewAll: req.user!.can('inspecciones.ver_todas'),
+    });
     res.type(evidence.mimeType);
     res.sendFile(evidence.path);
   }

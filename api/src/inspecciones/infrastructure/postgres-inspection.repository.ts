@@ -105,6 +105,10 @@ export class PostgresInspectionRepository implements InspectionRepositoryPort {
       params.push(filter.centroId);
       conditions.push(`i.centro_id = $${params.length}`);
     }
+    if (filter.inspectorId) {
+      params.push(filter.inspectorId);
+      conditions.push(`i.inspector_id = $${params.length}`);
+    }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 

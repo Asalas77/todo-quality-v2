@@ -38,7 +38,7 @@ export function AgendaKanban({ pendingSchedule, inspections, onStartSchedule }: 
       map.get('PENDIENTE')?.push({
         key: item.id,
         title: item.templateNombre,
-        subtitle: `${item.centroNombre} · ${item.fecha}`,
+        subtitle: `${item.centroNombre} · ${item.fecha} · ${item.asignadoNombre}`,
         onClick: () =>
           item.tipo === 'FORMULARIO'
             ? navigate(`/formularios/${item.formId}/completar?scheduleId=${item.id}`)
@@ -49,7 +49,7 @@ export function AgendaKanban({ pendingSchedule, inspections, onStartSchedule }: 
       map.get(inspection.estado)?.push({
         key: inspection.id,
         title: inspection.templateNombre,
-        subtitle: `${inspection.centroNombre} · ${inspection.fecha}`,
+        subtitle: `${inspection.centroNombre} · ${inspection.fecha} · ${inspection.inspectorNombre}`,
         onClick: () => navigate(`/inspecciones/${inspection.id}`),
       });
     }

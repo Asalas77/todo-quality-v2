@@ -24,6 +24,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { MainLayout } from '../components/MainLayout';
+import { PageLoader } from '../components/PageLoader';
 import { CentroFormDialog } from '../components/CentroFormDialog';
 import { centrosApi } from '../api/centros';
 import type { Centro, CentroInput } from '../api/centros';
@@ -135,6 +136,9 @@ export function CentrosPage() {
           />
         </Stack>
 
+        {isLoading ? (
+          <PageLoader />
+        ) : (
         <Box sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
@@ -146,7 +150,7 @@ export function CentrosPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {!isLoading && filtered.length === 0 && (
+            {filtered.length === 0 && (
               <TableRow>
                 <TableCell colSpan={canManage ? 4 : 3}>
                   <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
@@ -194,6 +198,7 @@ export function CentrosPage() {
           </TableBody>
         </Table>
         </Box>
+        )}
       </Card>
 
       <CentroFormDialog

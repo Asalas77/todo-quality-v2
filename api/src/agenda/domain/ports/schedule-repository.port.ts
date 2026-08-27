@@ -88,6 +88,12 @@ export class ScheduleCentroInactiveError extends Error {
   }
 }
 
+export class ScheduleAssigneeInvalidError extends Error {
+  constructor() {
+    super('El usuario responsable seleccionado no existe o no está activo');
+  }
+}
+
 /** Iniciar una inspección solo aplica a lo agendado de tipo CHECKLIST. */
 export class ScheduleWrongTargetTypeError extends Error {
   constructor(esperado: ScheduleTargetType) {

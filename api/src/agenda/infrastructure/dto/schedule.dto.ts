@@ -28,6 +28,11 @@ export class CreateScheduleDto {
   @IsUUID()
   centroId!: string;
 
+  /** Si se omite, se asigna a quien programa (comportamiento previo). */
+  @IsOptional()
+  @IsUUID()
+  asignadoA?: string;
+
   @IsDateString({}, { message: 'La fecha es obligatoria' })
   fecha!: string;
 

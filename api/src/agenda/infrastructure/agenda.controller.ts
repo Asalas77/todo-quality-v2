@@ -23,10 +23,12 @@ export class AgendaController {
     @Req() req: RequestWithUser,
     @Query('estado') estado?: ScheduleStatus,
     @Query('centroId') centroId?: string,
+    @Query('soloMios') soloMios?: string,
   ) {
     return this.listSchedule.execute({
       estado,
       centroId,
+      soloMios: soloMios === 'true',
       requestedBy: req.user!.userId,
       canViewAll: req.user!.can('agenda.ver_todas'),
     });
@@ -41,9 +43,10 @@ export class AgendaController {
       centroId: dto.centroId,
       fecha: dto.fecha,
       asunto: dto.asunto ?? null,
-      // El legacy no tenía selector de "asignar a otro usuario" en el formulario de
-      // agendar: la programación queda a nombre de quien la crea.
-      asignadoA: req.user!.userId,
+      // Quien programa puede asignar a otro usuario del equipo (requiere agenda.gestionar,
+      // que ya solo tienen Supervisor y Administrador); si no elige a nadie, queda a su
+      // propio nombre — mismo comportamiento que antes de que existiera el selector.
+      asignadoA: dto.asignadoA ?? req.user!.userId,
     });
   }
 

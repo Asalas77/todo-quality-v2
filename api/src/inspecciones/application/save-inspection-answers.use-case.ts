@@ -1,4 +1,10 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   AnswerInput,
   INSPECTION_REPOSITORY,
@@ -10,6 +16,8 @@ import {
 export interface SaveInspectionAnswersCommand {
   inspectionId: string;
   answers: AnswerInput[];
+  requestedBy: string;
+  canViewAll: boolean;
 }
 
 @Injectable()
@@ -20,6 +28,12 @@ export class SaveInspectionAnswersUseCase {
 
   async execute(command: SaveInspectionAnswersCommand): Promise<Inspection> {
     validateNoCumpleAnswers(command.answers);
+
+    const existing = await this.inspections.findById(command.inspectionId);
+    if (!existing) throw new NotFoundException('La inspección no existe');
+    if (!command.canViewAll && existing.inspectorId !== command.requestedBy) {
+      throw new ForbiddenException('No puedes modificar una inspección que no te pertenece');
+    }
 
     try {
       return await this.inspections.saveAnswers(command.inspectionId, command.answers);

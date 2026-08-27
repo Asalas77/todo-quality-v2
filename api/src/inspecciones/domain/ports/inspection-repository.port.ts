@@ -55,6 +55,8 @@ export interface AnswerInput {
 export interface ListInspectionsFilter {
   estado?: InspectionStatus;
   centroId?: string;
+  /** Sin 'inspecciones.ver_todas', solo se listan las propias — igual que en Agenda. */
+  inspectorId?: string;
 }
 
 export interface InspectionRepositoryPort {
@@ -108,5 +110,11 @@ export class TemplateInactiveError extends Error {
 export class CentroInactiveError extends Error {
   constructor() {
     super('El centro seleccionado no está activo');
+  }
+}
+
+export class InspectionForbiddenError extends Error {
+  constructor() {
+    super('No tienes permiso para ver o modificar esta inspección');
   }
 }

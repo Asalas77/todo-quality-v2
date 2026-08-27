@@ -9,6 +9,8 @@ import {
 export interface ListScheduleQuery {
   estado?: ListScheduleFilter['estado'];
   centroId?: string;
+  /** Filtro explícito "solo lo mío", disponible incluso con agenda.ver_todas. */
+  soloMios?: boolean;
   /** Usuario que consulta y si puede ver la agenda de todos o solo la propia. */
   requestedBy: string;
   canViewAll: boolean;
@@ -25,8 +27,9 @@ export class ListScheduleUseCase {
       estado: query.estado,
       centroId: query.centroId,
       // Sin agenda.ver_todas, un usuario solo ve lo que tiene asignado — igual que
-      // "MiAgenda" en el legacy frente al listado completo que solo veía el admin.
-      asignadoA: query.canViewAll ? undefined : query.requestedBy,
+      // "MiAgenda" en el legacy frente al listado completo que solo veía el admin. Con
+      // agenda.ver_todas, "soloMios" deja elegir ese mismo recorte a propósito.
+      asignadoA: query.canViewAll ? (query.soloMios ? query.requestedBy : undefined) : query.requestedBy,
     });
   }
 }

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import {
+  alpha,
   AppBar,
   Avatar,
   Box,
@@ -27,7 +28,10 @@ import PeopleIcon from '@mui/icons-material/People';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
 import { useAuth } from '../context/AuthContext';
+import { useThemeMode } from '../context/ThemeModeContext';
 import { Logo } from './Logo';
 
 const NAV_ITEMS = [
@@ -41,6 +45,7 @@ const NAV_ITEMS = [
 
 export function MainLayout({ children }: { children: ReactNode }) {
   const { logout, hasPermission, user } = useAuth();
+  const { mode, toggle } = useThemeMode();
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -54,7 +59,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
         color="inherit"
         elevation={0}
         className="no-print"
-        sx={{ bgcolor: 'background.paper', borderBottom: '1px solid #E5E9EF' }}
+        sx={{ bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}
       >
         <Toolbar sx={{ gap: 0.5, minHeight: 64 }}>
           <IconButton
@@ -67,7 +72,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
 
           <Box
             component={RouterLink}
-            to="/inicio"
+            to="/"
             sx={{ textDecoration: 'none', color: 'inherit', mr: 3 }}
           >
             <Logo size={34} />
@@ -86,7 +91,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
                   key={item.to}
                   component={RouterLink}
                   to={item.to}
-                  sx={{
+                  sx={(theme) => ({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 0.75,
@@ -98,12 +103,14 @@ export function MainLayout({ children }: { children: ReactNode }) {
                     fontWeight: 600,
                     whiteSpace: 'nowrap',
                     color: active ? 'primary.main' : 'text.secondary',
-                    bgcolor: active ? 'rgba(0, 78, 137, 0.08)' : 'transparent',
+                    bgcolor: active ? alpha(theme.palette.primary.main, 0.08) : 'transparent',
                     transition: 'background-color 0.15s, color 0.15s',
                     '&:hover': {
-                      bgcolor: active ? 'rgba(0, 78, 137, 0.12)' : 'rgba(15, 23, 42, 0.04)',
+                      bgcolor: active
+                        ? alpha(theme.palette.primary.main, 0.14)
+                        : alpha(theme.palette.text.primary, 0.05),
                     },
-                  }}
+                  })}
                 >
                   <Icon sx={{ fontSize: 19 }} />
                   {item.label}
@@ -113,6 +120,12 @@ export function MainLayout({ children }: { children: ReactNode }) {
           </Stack>
 
           <Box sx={{ flexGrow: { xs: 1, lg: 0 } }} />
+
+          <Tooltip title={mode === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}>
+            <IconButton onClick={toggle} size="small" sx={{ mr: 1 }} aria-label="Cambiar tema">
+              {mode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
 
           {user?.tenantNombre && (
             <Typography
@@ -181,6 +194,12 @@ export function MainLayout({ children }: { children: ReactNode }) {
           </List>
           <Divider />
           <List>
+            <ListItemButton onClick={toggle}>
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+              </ListItemIcon>
+              <ListItemText primary={mode === 'dark' ? 'Modo claro' : 'Modo oscuro'} />
+            </ListItemButton>
             <ListItemButton component={RouterLink} to="/perfil" onClick={() => setDrawerOpen(false)}>
               <ListItemIcon sx={{ minWidth: 40 }}>
                 <PersonIcon />

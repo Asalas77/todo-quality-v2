@@ -25,6 +25,9 @@ import type { ChecklistTemplateSummary } from '../api/plantillas';
 import { formulariosApi } from '../api/formularios';
 import type { FormSummary } from '../api/formularios';
 import { agendaApi } from '../api/agenda';
+import { usuariosApi } from '../api/usuarios';
+import type { User } from '../api/usuarios';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * El select combina checklists y formularios en una sola lista agrupada. El valor lleva
@@ -34,6 +37,7 @@ import { agendaApi } from '../api/agenda';
 const schema = z.object({
   target: z.string().min(1, 'Selecciona un checklist o formulario'),
   centroId: z.string().min(1, 'Selecciona un centro'),
+  asignadoA: z.string().optional(),
   fecha: z.string().min(1, 'Obligatoria'),
   asunto: z.string().optional(),
 });
@@ -47,9 +51,12 @@ interface CreateScheduleDialogProps {
 }
 
 export function CreateScheduleDialog({ open, onClose, onCreated }: CreateScheduleDialogProps) {
+  const { hasPermission } = useAuth();
+  const canAssign = hasPermission('usuarios.ver');
   const [templates, setTemplates] = useState<ChecklistTemplateSummary[]>([]);
   const [forms, setForms] = useState<FormSummary[]>([]);
   const [centros, setCentros] = useState<Centro[]>([]);
+  const [usuarios, setUsuarios] = useState<User[]>([]);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -62,18 +69,22 @@ export function CreateScheduleDialog({ open, onClose, onCreated }: CreateSchedul
   useEffect(() => {
     if (!open) return;
     setServerError(null);
-    reset({ target: '', centroId: '', fecha: '', asunto: '' });
+    reset({ target: '', centroId: '', asignadoA: '', fecha: '', asunto: '' });
     Promise.all([
       plantillasApi.list(false),
       centrosApi.list(false),
       // Un usuario sin permiso de formularios sigue pudiendo agendar checklists.
       formulariosApi.list(false).catch(() => [] as FormSummary[]),
-    ]).then(([templateList, centroList, formList]) => {
+      // Solo Supervisor y Administrador tienen 'usuarios.ver' — sin ese permiso la
+      // programación queda a nombre de quien la crea, como antes de este selector.
+      canAssign ? usuariosApi.list(false) : Promise.resolve([] as User[]),
+    ]).then(([templateList, centroList, formList, userList]) => {
       setTemplates(templateList);
       setCentros(centroList);
       setForms(formList);
+      setUsuarios(userList);
     });
-  }, [open, reset]);
+  }, [open, reset, canAssign]);
 
   const submit = handleSubmit(async (values) => {
     setServerError(null);
@@ -83,6 +94,7 @@ export function CreateScheduleDialog({ open, onClose, onCreated }: CreateSchedul
         templateId: tipo === 'CHECKLIST' ? id : undefined,
         formId: tipo === 'FORMULARIO' ? id : undefined,
         centroId: values.centroId,
+        asignadoA: values.asignadoA || undefined,
         fecha: values.fecha,
         asunto: values.asunto,
       });
@@ -140,6 +152,27 @@ export function CreateScheduleDialog({ open, onClose, onCreated }: CreateSchedul
                 ))}
               </Select>
             </FormControl>
+
+            {canAssign && (
+              <FormControl fullWidth error={!!errors.asignadoA}>
+                <InputLabel id="sched-asignado-label">Responsable (opcional)</InputLabel>
+                <Select
+                  labelId="sched-asignado-label"
+                  label="Responsable (opcional)"
+                  defaultValue=""
+                  {...register('asignadoA')}
+                >
+                  <MenuItem value="">
+                    <em>Yo (quien programa)</em>
+                  </MenuItem>
+                  {usuarios.map((u) => (
+                    <MenuItem key={u.id} value={u.id}>
+                      {u.nombre} {u.apellido}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
 
             <TextField
               label="Fecha"
