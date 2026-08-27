@@ -18,10 +18,16 @@ export class SmtpEmailNotifier implements EmailNotifierPort {
 
   constructor(private readonly config: ConfigService) {
     const host = this.config.get<string>('SMTP_HOST');
+    const user = this.config.get<string>('SMTP_USER');
+    const pass = this.config.get<string>('SMTP_PASS');
     this.to = this.config.get<string>('SUPPORT_EMAIL_TO');
     this.from = this.config.get<string>('SMTP_FROM', 'Kontrol <no-reply@kontrol.app>');
 
-    if (!host) {
+    // SMTP_HOST puede venir fijo en el despliegue (ver render.yaml) mientras
+    // SMTP_USER/SMTP_PASS todavía no se completan a mano — getOrThrow() tumbaría el
+    // servicio entero al arrancar. Cualquiera de los tres faltando cae en modo no-op,
+    // igual que RequestPasswordResetUseCase con devResetUrl.
+    if (!host || !user || !pass) {
       this.transporter = null;
       return;
     }
@@ -30,10 +36,7 @@ export class SmtpEmailNotifier implements EmailNotifierPort {
       host,
       port: this.config.get<number>('SMTP_PORT', 587),
       secure: this.config.get('SMTP_SECURE') === 'true',
-      auth: {
-        user: this.config.getOrThrow<string>('SMTP_USER'),
-        pass: this.config.getOrThrow<string>('SMTP_PASS'),
-      },
+      auth: { user, pass },
     });
   }
 
