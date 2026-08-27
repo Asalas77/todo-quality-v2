@@ -30,9 +30,11 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeModeContext';
 import { Logo } from './Logo';
+import { SupportDialog } from './SupportDialog';
 
 const NAV_ITEMS = [
   { to: '/centros', label: 'Centros', icon: StoreIcon, permission: null },
@@ -49,6 +51,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
 
   const items = NAV_ITEMS.filter((item) => !item.permission || hasPermission(item.permission));
 
@@ -152,6 +155,15 @@ export function MainLayout({ children }: { children: ReactNode }) {
               <PersonIcon fontSize="small" sx={{ mr: 1.25 }} />
               Perfil
             </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setAnchorEl(null);
+                setSupportOpen(true);
+              }}
+            >
+              <SupportAgentIcon fontSize="small" sx={{ mr: 1.25 }} />
+              Soporte y comentarios
+            </MenuItem>
             <Divider />
             <MenuItem onClick={() => logout()}>
               <LogoutIcon fontSize="small" sx={{ mr: 1.25 }} />
@@ -209,6 +221,17 @@ export function MainLayout({ children }: { children: ReactNode }) {
             <ListItemButton
               onClick={() => {
                 setDrawerOpen(false);
+                setSupportOpen(true);
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                <SupportAgentIcon />
+              </ListItemIcon>
+              <ListItemText primary="Soporte y comentarios" />
+            </ListItemButton>
+            <ListItemButton
+              onClick={() => {
+                setDrawerOpen(false);
                 logout();
               }}
             >
@@ -224,6 +247,8 @@ export function MainLayout({ children }: { children: ReactNode }) {
       <Box component="main" sx={{ p: { xs: 2, sm: 3 } }}>
         {children}
       </Box>
+
+      <SupportDialog open={supportOpen} onClose={() => setSupportOpen(false)} />
     </Box>
   );
 }
