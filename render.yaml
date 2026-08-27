@@ -1,6 +1,6 @@
 # Blueprint de Render para desplegar Kontrol gratis, solo para pruebas.
 # En render.com: New -> Blueprint -> selecciona este repo -> Render lee este archivo
-# y crea los 3 servicios automáticamente.
+# y crea los servicios automáticamente (api, web y landing).
 #
 # Notas sobre el free tier de Render:
 # - Web Service (api): "duerme" tras ~15 min sin tráfico; la siguiente petición tarda
@@ -59,3 +59,8 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+
+  - type: web
+    name: kontrol-landing
+    runtime: static
+    staticPublishPath: landing
