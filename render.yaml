@@ -6,15 +6,9 @@
 # - Web Service (api): "duerme" tras ~15 min sin tráfico; la siguiente petición tarda
 #   unos segundos en despertarlo. Normal y gratis siempre.
 # - Static Site (web): nunca duerme, siempre gratis, con HTTPS y dominio *.onrender.com.
-# - PostgreSQL free: se borra automáticamente a los 30 días de creada. Sirve perfecto
-#   para pruebas; si el proyecto sigue vivo pasado ese plazo, hay que recrearla (o
-#   pasar a un Postgres gratuito sin caducidad, como Neon, y apuntar DB_HOST ahí).
-
-databases:
-  - name: kontrol-db
-    plan: free
-    databaseName: todoquality
-    user: todo_quality_app
+# - Base de datos: Render solo permite una PostgreSQL gratis por cuenta, y esta cuenta ya
+#   tiene otro proyecto usándola. Por eso la base va en Neon (neon.tech) — Postgres
+#   gratuito externo, sin límite de tiempo, sin chocar con el cupo de Render.
 
 services:
   - type: web
@@ -25,25 +19,17 @@ services:
     dockerContext: ./api
     envVars:
       - key: DB_HOST
-        fromDatabase:
-          name: kontrol-db
-          property: host
+        sync: false
       - key: DB_PORT
-        fromDatabase:
-          name: kontrol-db
-          property: port
+        value: 5432
       - key: DB_USER
-        fromDatabase:
-          name: kontrol-db
-          property: user
+        sync: false
       - key: DB_PASSWORD
-        fromDatabase:
-          name: kontrol-db
-          property: password
+        sync: false
       - key: DB_NAME
-        fromDatabase:
-          name: kontrol-db
-          property: database
+        sync: false
+      - key: DB_SSL
+        value: 'true'
       - key: JWT_SECRET
         generateValue: true
       - key: ACCESS_TOKEN_TTL_SECONDS

@@ -31,6 +31,10 @@ import { PermissionsGuard } from './auth/infrastructure/guards/permissions.guard
         // synchronize las borraría sin avisar. El esquema lo llevan las migraciones SQL.
         synchronize: false,
         autoLoadEntities: true,
+        // Proveedores gestionados (ej. Neon) exigen TLS y usan certificados que Node no
+        // valida contra una CA local conocida; rejectUnauthorized: false replica lo que
+        // hace cualquier cliente psql con sslmode=require.
+        ssl: config.get('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
       }),
     }),
     SharedModule,
