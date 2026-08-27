@@ -285,7 +285,7 @@ export class PostgresInspectionRepository implements InspectionRepositoryPort {
       await manager.query(
         `UPDATE inspection_answer
          SET resuelto_at = CASE WHEN $1 THEN now() ELSE NULL END,
-             resuelto_por = CASE WHEN $1 THEN $2 ELSE NULL END,
+             resuelto_por = CASE WHEN $1 THEN $2::uuid ELSE NULL END,
              updated_at = now()
          WHERE inspection_id = $3 AND template_item_id = $4`,
         [resuelto, resueltoPor, inspectionId, templateItemId],
