@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Alert,
+  Box,
   Button,
   Card,
   CardContent,
@@ -15,6 +16,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import ScienceIcon from '@mui/icons-material/Science';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useAuth } from '../context/AuthContext';
@@ -58,11 +60,17 @@ export function LoginPage() {
   // Render) — en un despliegue real nunca se configuran y el botón no se muestra.
   const demoEmail = import.meta.env.VITE_DEMO_EMAIL as string | undefined;
   const demoPassword = import.meta.env.VITE_DEMO_PASSWORD as string | undefined;
+  const hasDemo = Boolean(demoEmail && demoPassword);
 
-  const fillDemoCredentials = () => {
-    setValue('email', demoEmail ?? '', { shouldValidate: true });
-    setValue('password', demoPassword ?? '', { shouldValidate: true });
-  };
+  // En el ambiente de demo los campos llegan ya completos: no hace falta que el
+  // visitante copie ni pegue nada, solo presionar "Iniciar sesión".
+  useEffect(() => {
+    if (hasDemo) {
+      setValue('email', demoEmail as string);
+      setValue('password', demoPassword as string);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasDemo]);
 
   const onSubmit = async (values: FormValues) => {
     setServerError(null);
@@ -82,7 +90,34 @@ export function LoginPage() {
 
   return (
     <AuthBackground>
-      <Card sx={{ width: 400, maxWidth: '100%', p: 2, borderRadius: 3, boxShadow: '0 8px 32px rgba(15, 23, 42, 0.08)' }}>
+      <Card sx={{ width: 400, maxWidth: '100%', p: 2, borderRadius: 3, boxShadow: '0 8px 32px rgba(15, 23, 42, 0.08)', overflow: 'visible' }}>
+        {hasDemo && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              mx: -2,
+              mt: -2,
+              mb: 2,
+              px: 2,
+              py: 1.25,
+              borderRadius: '12px 12px 0 0',
+              bgcolor: 'warning.main',
+              color: 'warning.contrastText',
+            }}
+          >
+            <ScienceIcon fontSize="small" />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                Ambiente de demostración
+              </Typography>
+              <Typography variant="caption" sx={{ display: 'block', opacity: 0.9 }}>
+                {demoEmail} · datos ya completados abajo
+              </Typography>
+            </Box>
+          </Box>
+        )}
         <CardContent>
           <Typography variant="h5" component="h1" sx={{ textAlign: 'center' }} gutterBottom>
             Bienvenido de nuevo
@@ -147,12 +182,6 @@ export function LoginPage() {
               <Button type="submit" variant="contained" disabled={isSubmitting}>
                 {isSubmitting ? 'Ingresando…' : 'Iniciar sesión'}
               </Button>
-
-              {demoEmail && demoPassword && (
-                <Button variant="outlined" onClick={fillDemoCredentials} disabled={isSubmitting}>
-                  Usar cuenta demo
-                </Button>
-              )}
 
               <Typography variant="body2" sx={{ textAlign: 'center' }}>
                 <Link component={RouterLink} to="/olvide-contrasena">
