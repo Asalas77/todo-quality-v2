@@ -47,11 +47,22 @@ export function LoginPage() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   const passwordWasReset = (location.state as { passwordReset?: boolean } | null)
     ?.passwordReset;
+
+  // Solo aparece si el despliegue define estas variables (ej. el entorno de demo en
+  // Render) — en un despliegue real nunca se configuran y el botón no se muestra.
+  const demoEmail = import.meta.env.VITE_DEMO_EMAIL as string | undefined;
+  const demoPassword = import.meta.env.VITE_DEMO_PASSWORD as string | undefined;
+
+  const fillDemoCredentials = () => {
+    setValue('email', demoEmail ?? '', { shouldValidate: true });
+    setValue('password', demoPassword ?? '', { shouldValidate: true });
+  };
 
   const onSubmit = async (values: FormValues) => {
     setServerError(null);
@@ -136,6 +147,12 @@ export function LoginPage() {
               <Button type="submit" variant="contained" disabled={isSubmitting}>
                 {isSubmitting ? 'Ingresando…' : 'Iniciar sesión'}
               </Button>
+
+              {demoEmail && demoPassword && (
+                <Button variant="outlined" onClick={fillDemoCredentials} disabled={isSubmitting}>
+                  Usar cuenta demo
+                </Button>
+              )}
 
               <Typography variant="body2" sx={{ textAlign: 'center' }}>
                 <Link component={RouterLink} to="/olvide-contrasena">
