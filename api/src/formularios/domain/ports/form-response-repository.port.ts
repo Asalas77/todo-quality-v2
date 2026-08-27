@@ -32,10 +32,26 @@ export interface FormResponseSummary {
   formId: string;
   centroId: string | null;
   centroNombre: string | null;
+  creadoPor: string;
   creadoPorNombre: string;
   estado: FormResponseStatus;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ListFormResponsesFilter {
+  /** Sin 'formularios.ver_todas', solo se listan las propias. */
+  creadoPor?: string;
+}
+
+export interface FormResponseWithForm extends FormResponseSummary {
+  formNombre: string;
+}
+
+export interface ListAllFormResponsesFilter {
+  centroId?: string;
+  /** Sin 'formularios.ver_todas', solo se listan las propias. */
+  creadoPor?: string;
 }
 
 export interface FormResponseDetail extends FormResponseSummary {
@@ -57,6 +73,8 @@ export interface FormResponseRepositoryPort {
   saveDraft(input: SubmitFormResponseInput): Promise<FormResponseDetail>;
   /** El borrador vigente de este usuario para este formulario, si existe. */
   findDraft(formId: string, userId: string): Promise<FormResponseDetail | null>;
-  findByForm(formId: string): Promise<FormResponseSummary[]>;
+  findByForm(formId: string, filter?: ListFormResponsesFilter): Promise<FormResponseSummary[]>;
+  /** Todas las respuestas ENVIADA del tenant, de cualquier formulario — para Agenda. */
+  findAllSubmitted(filter?: ListAllFormResponsesFilter): Promise<FormResponseWithForm[]>;
   findById(id: string): Promise<FormResponseDetail | null>;
 }

@@ -16,19 +16,22 @@ import CloseIcon from '@mui/icons-material/Close';
 import type { InspectionStatus, InspectionSummary } from '../api/inspecciones';
 import { ESTADO_LABEL } from '../api/inspecciones';
 import type { Schedule } from '../api/agenda';
+import type { FormResponseWithForm } from '../api/formularios';
 
-type CalendarDotColor = InspectionStatus | 'PENDIENTE';
+type CalendarDotColor = InspectionStatus | 'PENDIENTE' | 'FORMULARIO';
 
 const DOT_COLOR: Record<CalendarDotColor, string> = {
   PENDIENTE: '#1565c0',
   BORRADOR: '#9e9e9e',
   CONFORME: '#2e7d32',
   NO_CONFORME: '#c62828',
+  FORMULARIO: '#f97316',
 };
 
 const DOT_LABEL: Record<CalendarDotColor, string> = {
   PENDIENTE: 'Pendiente',
   ...ESTADO_LABEL,
+  FORMULARIO: 'Formulario',
 };
 
 const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -56,15 +59,22 @@ function toDateKey(date: Date): string {
 
 type CalendarEntry =
   | { kind: 'schedule'; id: string; fecha: string; label: string; schedule: Schedule }
-  | { kind: 'inspection'; id: string; fecha: string; label: string; estado: InspectionStatus };
+  | { kind: 'inspection'; id: string; fecha: string; label: string; estado: InspectionStatus }
+  | { kind: 'formResponse'; id: string; fecha: string; label: string; formId: string };
 
 interface AgendaCalendarProps {
   pendingSchedule: Schedule[];
   inspections: InspectionSummary[];
+  formResponses: FormResponseWithForm[];
   onStartSchedule: (item: Schedule) => void;
 }
 
-export function AgendaCalendar({ pendingSchedule, inspections, onStartSchedule }: AgendaCalendarProps) {
+export function AgendaCalendar({
+  pendingSchedule,
+  inspections,
+  formResponses,
+  onStartSchedule,
+}: AgendaCalendarProps) {
   const navigate = useNavigate();
   const today = useMemo(() => new Date(), []);
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
@@ -85,8 +95,15 @@ export function AgendaCalendar({ pendingSchedule, inspections, onStartSchedule }
       label: `${inspection.templateNombre} · ${inspection.centroNombre} · ${inspection.inspectorNombre}`,
       estado: inspection.estado,
     }));
-    return [...scheduleEntries, ...inspectionEntries];
-  }, [pendingSchedule, inspections]);
+    const formEntries: CalendarEntry[] = formResponses.map((response) => ({
+      kind: 'formResponse',
+      id: response.id,
+      fecha: response.createdAt.slice(0, 10),
+      label: `${response.formNombre} · ${response.centroNombre ?? 'Sin centro'} · ${response.creadoPorNombre}`,
+      formId: response.formId,
+    }));
+    return [...scheduleEntries, ...inspectionEntries, ...formEntries];
+  }, [pendingSchedule, inspections, formResponses]);
 
   const byDate = useMemo(() => {
     const map = new Map<string, CalendarEntry[]>();
@@ -107,12 +124,22 @@ export function AgendaCalendar({ pendingSchedule, inspections, onStartSchedule }
       navigate(`/inspecciones/${entry.id}`);
       return;
     }
+    if (entry.kind === 'formResponse') {
+      navigate(`/formularios/${entry.formId}/respuestas?responseId=${entry.id}`);
+      return;
+    }
     if (entry.schedule.tipo === 'FORMULARIO') {
       navigate(`/formularios/${entry.schedule.formId}/completar?scheduleId=${entry.schedule.id}`);
       return;
     }
     onStartSchedule(entry.schedule);
   };
+
+  function dotColorFor(entry: CalendarEntry): string {
+    if (entry.kind === 'schedule') return DOT_COLOR.PENDIENTE;
+    if (entry.kind === 'formResponse') return DOT_COLOR.FORMULARIO;
+    return DOT_COLOR[entry.estado];
+  }
 
   const selectedDayKey = selectedDay ? toDateKey(selectedDay) : null;
   const selectedDayEntries = selectedDayKey ? (byDate.get(selectedDayKey) ?? []) : [];
@@ -186,7 +213,7 @@ export function AgendaCalendar({ pendingSchedule, inspections, onStartSchedule }
                       maxWidth: '100%',
                       fontSize: '0.65rem',
                       justifyContent: 'flex-start',
-                      bgcolor: DOT_COLOR[entry.kind === 'schedule' ? 'PENDIENTE' : entry.estado],
+                      bgcolor: dotColorFor(entry),
                       color: 'white',
                       cursor: 'pointer',
                       '& .MuiChip-label': {
@@ -255,7 +282,7 @@ export function AgendaCalendar({ pendingSchedule, inspections, onStartSchedule }
                     height: 10,
                     borderRadius: '50%',
                     flexShrink: 0,
-                    bgcolor: DOT_COLOR[entry.kind === 'schedule' ? 'PENDIENTE' : entry.estado],
+                    bgcolor: dotColorFor(entry),
                   }}
                 />
                 <Typography variant="body2">{entry.label}</Typography>

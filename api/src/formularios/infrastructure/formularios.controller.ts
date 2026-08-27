@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Inject,
   NotFoundException,
@@ -25,6 +26,7 @@ import { SubmitFormResponseUseCase } from '../application/submit-form-response.u
 import { SaveFormDraftUseCase } from '../application/save-form-draft.use-case';
 import { GetFormDraftUseCase } from '../application/get-form-draft.use-case';
 import { ListFormResponsesUseCase } from '../application/list-form-responses.use-case';
+import { ListAllFormResponsesUseCase } from '../application/list-all-form-responses.use-case';
 import { GetFormResponseUseCase } from '../application/get-form-response.use-case';
 import { FORM_RESPONSE_REPOSITORY, FormResponseRepositoryPort } from '../domain/ports/form-response-repository.port';
 import { FormFileStorage } from './form-file-storage';
@@ -53,6 +55,7 @@ export class FormulariosController {
     private readonly saveFormDraft: SaveFormDraftUseCase,
     private readonly getFormDraft: GetFormDraftUseCase,
     private readonly listResponses: ListFormResponsesUseCase,
+    private readonly listAllFormResponses: ListAllFormResponsesUseCase,
     private readonly getResponse: GetFormResponseUseCase,
     private readonly fileStorage: FormFileStorage,
     @Inject(FORM_RESPONSE_REPOSITORY) private readonly responses: FormResponseRepositoryPort,
@@ -62,6 +65,20 @@ export class FormulariosController {
   @Get()
   list(@Query('includeInactive') includeInactive?: string) {
     return this.listForms.execute(includeInactive === 'true');
+  }
+
+  /**
+   * Todas las respuestas enviadas del tenant, de cualquier formulario — usado por Agenda.
+   * Debe ir antes de ':id' para que 'respuestas' no se intente parsear como uuid.
+   */
+  @RequirePermissions('formularios.ver')
+  @Get('respuestas')
+  listAllResponses(@Query('centroId') centroId: string | undefined, @Req() req: RequestWithUser) {
+    return this.listAllFormResponses.execute({
+      centroId,
+      requestedBy: req.user!.userId,
+      canViewAll: req.user!.can('formularios.ver_todas'),
+    });
   }
 
   @RequirePermissions('formularios.ver')
@@ -128,14 +145,25 @@ export class FormulariosController {
 
   @RequirePermissions('formularios.ver')
   @Get(':id/respuestas')
-  listFormResponses(@Param('id', ParseUUIDPipe) id: string) {
-    return this.listResponses.execute(id);
+  listFormResponses(@Param('id', ParseUUIDPipe) id: string, @Req() req: RequestWithUser) {
+    return this.listResponses.execute({
+      formId: id,
+      requestedBy: req.user!.userId,
+      canViewAll: req.user!.can('formularios.ver_todas'),
+    });
   }
 
   @RequirePermissions('formularios.ver')
   @Get('respuestas/:responseId')
-  getFormResponse(@Param('responseId', ParseUUIDPipe) responseId: string) {
-    return this.getResponse.execute(responseId);
+  getFormResponse(
+    @Param('responseId', ParseUUIDPipe) responseId: string,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.getResponse.execute({
+      id: responseId,
+      requestedBy: req.user!.userId,
+      canViewAll: req.user!.can('formularios.ver_todas'),
+    });
   }
 
   @RequirePermissions('formularios.completar')
@@ -156,10 +184,15 @@ export class FormulariosController {
   async downloadArchivo(
     @Param('responseId', ParseUUIDPipe) responseId: string,
     @Param('campoId', ParseUUIDPipe) campoId: string,
+    @Req() req: RequestWithUser,
     @Res() res: Response,
   ): Promise<void> {
     const response = await this.responses.findById(responseId);
-    const valor = response?.valores.find((v) => v.campoId === campoId);
+    if (!response) throw new NotFoundException('La respuesta no existe');
+    if (!req.user!.can('formularios.ver_todas') && response.creadoPor !== req.user!.userId) {
+      throw new ForbiddenException('No tienes permiso para ver esta respuesta');
+    }
+    const valor = response.valores.find((v) => v.campoId === campoId);
     if (!valor?.archivoUrl) throw new NotFoundException('Este campo no tiene archivo cargado');
 
     const file = await this.fileStorage.resolve(valor.archivoUrl);

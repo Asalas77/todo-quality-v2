@@ -2,25 +2,25 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   FORM_RESPONSE_REPOSITORY,
   FormResponseRepositoryPort,
-  FormResponseSummary,
+  FormResponseWithForm,
 } from '../domain/ports/form-response-repository.port';
 
-export interface ListFormResponsesQuery {
-  formId: string;
+export interface ListAllFormResponsesQuery {
+  centroId?: string;
   requestedBy: string;
   canViewAll: boolean;
 }
 
+/** Todas las respuestas enviadas del tenant, de cualquier formulario — alimenta Agenda. */
 @Injectable()
-export class ListFormResponsesUseCase {
+export class ListAllFormResponsesUseCase {
   constructor(
     @Inject(FORM_RESPONSE_REPOSITORY) private readonly responses: FormResponseRepositoryPort,
   ) {}
 
-  execute(query: ListFormResponsesQuery): Promise<FormResponseSummary[]> {
-    return this.responses.findByForm(query.formId, {
-      // Sin formularios.ver_todas, cada quien ve solo sus propias respuestas — igual que
-      // en inspecciones y agenda.
+  execute(query: ListAllFormResponsesQuery): Promise<FormResponseWithForm[]> {
+    return this.responses.findAllSubmitted({
+      centroId: query.centroId,
       creadoPor: query.canViewAll ? undefined : query.requestedBy,
     });
   }

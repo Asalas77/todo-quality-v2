@@ -40,6 +40,7 @@ import { agendaApi, SCHEDULE_ESTADO_LABEL } from '../api/agenda';
 import type { Schedule, ScheduleStatus } from '../api/agenda';
 import { inspeccionesApi, ESTADO_LABEL } from '../api/inspecciones';
 import type { InspectionStatus } from '../api/inspecciones';
+import { formulariosApi } from '../api/formularios';
 import { centrosApi } from '../api/centros';
 import { useAuth } from '../context/AuthContext';
 
@@ -106,6 +107,11 @@ export function AgendaPage() {
     queryFn: () => inspeccionesApi.list(centroFilter ? { centroId: centroFilter } : {}),
   });
 
+  const { data: formResponses = [], isLoading: loadingFormResponses } = useQuery({
+    queryKey: ['formulario-respuestas-todas', centroFilter],
+    queryFn: () => formulariosApi.listAllResponses({ centroId: centroFilter || undefined }),
+  });
+
   const pendingSchedule = useMemo(
     () => allSchedule.filter((item) => item.estado === 'PENDIENTE'),
     [allSchedule],
@@ -114,6 +120,7 @@ export function AgendaPage() {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['agenda'] });
     queryClient.invalidateQueries({ queryKey: ['inspecciones'] });
+    queryClient.invalidateQueries({ queryKey: ['formulario-respuestas-todas'] });
   };
 
   const cancelMutation = useMutation({
@@ -132,7 +139,7 @@ export function AgendaPage() {
   });
 
   const handleStartSchedule = (item: Schedule) => startMutation.mutate(item.id);
-  const loadingOverview = loadingAllSchedule || loadingInspections;
+  const loadingOverview = loadingAllSchedule || loadingInspections || loadingFormResponses;
 
   return (
     <MainLayout>
@@ -201,6 +208,7 @@ export function AgendaPage() {
             <AgendaCalendar
               pendingSchedule={pendingSchedule}
               inspections={inspections}
+              formResponses={formResponses}
               onStartSchedule={handleStartSchedule}
             />
           )
@@ -213,6 +221,7 @@ export function AgendaPage() {
             <AgendaKanban
               pendingSchedule={pendingSchedule}
               inspections={inspections}
+              formResponses={formResponses}
               onStartSchedule={handleStartSchedule}
             />
           )
@@ -334,7 +343,11 @@ export function AgendaPage() {
                       {item.estado === 'COMPLETADA' && item.formRespuestaId && (
                         <Button
                           size="small"
-                          onClick={() => navigate(`/formularios/${item.formId}/respuestas`)}
+                          onClick={() =>
+                            navigate(
+                              `/formularios/${item.formId}/respuestas?responseId=${item.formRespuestaId}`,
+                            )
+                          }
                         >
                           Ver respuesta
                         </Button>
@@ -392,6 +405,52 @@ export function AgendaPage() {
                         size="small"
                       />
                     </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            </Box>
+            )}
+
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Formularios completados
+            </Typography>
+            {loadingFormResponses ? (
+              <PageLoader minHeight={160} />
+            ) : (
+            <Box sx={{ overflowX: 'auto' }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Fecha</TableCell>
+                  <TableCell>Formulario</TableCell>
+                  <TableCell>Centro</TableCell>
+                  <TableCell>Completado por</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {formResponses.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4}>
+                      <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+                        No hay formularios completados para mostrar.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+                {formResponses.map((response) => (
+                  <TableRow
+                    key={response.id}
+                    hover
+                    onClick={() =>
+                      navigate(`/formularios/${response.formId}/respuestas?responseId=${response.id}`)
+                    }
+                    sx={{ cursor: 'pointer' }}
+                  >
+                    <TableCell>{new Date(response.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{response.formNombre}</TableCell>
+                    <TableCell>{response.centroNombre ?? '—'}</TableCell>
+                    <TableCell>{response.creadoPorNombre}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

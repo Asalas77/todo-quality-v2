@@ -9,6 +9,7 @@ import { SubmitFormResponseUseCase } from './application/submit-form-response.us
 import { SaveFormDraftUseCase } from './application/save-form-draft.use-case';
 import { GetFormDraftUseCase } from './application/get-form-draft.use-case';
 import { ListFormResponsesUseCase } from './application/list-form-responses.use-case';
+import { ListAllFormResponsesUseCase } from './application/list-all-form-responses.use-case';
 import { GetFormResponseUseCase } from './application/get-form-response.use-case';
 import { FORM_REPOSITORY } from './domain/ports/form-repository.port';
 import { FORM_RESPONSE_REPOSITORY } from './domain/ports/form-response-repository.port';
@@ -31,6 +32,7 @@ import { AgendaModule } from '../agenda/agenda.module';
     SaveFormDraftUseCase,
     GetFormDraftUseCase,
     ListFormResponsesUseCase,
+    ListAllFormResponsesUseCase,
     GetFormResponseUseCase,
     FormFileStorage,
     { provide: FORM_REPOSITORY, useClass: PostgresFormRepository },

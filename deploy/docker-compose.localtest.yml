@@ -1,0 +1,55 @@
+# Solo para probar el stack de producción en la máquina de desarrollo: mismas imágenes y
+# mismo cableado que docker-compose.prod.yml, pero sin HTTPS/certbot (Let's Encrypt exige
+# un dominio público real, que no existe en local). Sirve para verificar que las imágenes
+# arrancan, que la API habla con la base y que nginx hace bien de proxy.
+#
+# Uso, desde la raíz del repo:
+#   docker compose -f deploy/docker-compose.localtest.yml up -d --build
+#   (abrir http://localhost:8099)
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres_local_test
+      POSTGRES_DB: todoquality
+      APP_DB_PASSWORD: app_local_test
+    volumes:
+      - ../db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d todoquality']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ../api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: todo_quality_app
+      DB_PASSWORD: app_local_test
+      DB_NAME: todoquality
+      JWT_SECRET: secreto-solo-para-prueba-local-de-docker-1234567890
+      ACCESS_TOKEN_TTL_SECONDS: 900
+      REFRESH_TOKEN_TTL_DAYS: 30
+      PORT: 4000
+      CORS_ORIGIN: http://localhost:8099
+      COOKIE_CROSS_SITE: 'false'
+      UPLOADS_DIR: /app/uploads
+      FRONTEND_URL: http://localhost:8099
+      NODE_ENV: production
+
+  web:
+    build:
+      context: ../web
+      args:
+        VITE_API_URL: http://localhost:8099/api
+    depends_on:
+      - api
+    ports:
+      - '8099:80'
+    volumes:
+      - ./nginx.localtest.conf:/etc/nginx/conf.d/default.conf:ro

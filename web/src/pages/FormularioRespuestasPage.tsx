@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link as RouterLink } from 'react-router-dom';
+import { useParams, useSearchParams, Link as RouterLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Box,
@@ -64,7 +64,10 @@ function FotoThumbnail({ responseId, campoId }: { responseId: string; campoId: s
 
 export function FormularioRespuestasPage() {
   const { id } = useParams<{ id: string }>();
-  const [openResponseId, setOpenResponseId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [openResponseId, setOpenResponseId] = useState<string | null>(
+    searchParams.get('responseId'),
+  );
 
   const { data: form } = useQuery({
     queryKey: ['formulario', id],
@@ -78,10 +81,11 @@ export function FormularioRespuestasPage() {
     enabled: !!id,
   });
 
-  const { data: responseDetail } = useQuery({
+  const { data: responseDetail, isError: isResponseError } = useQuery({
     queryKey: ['formulario-respuesta', openResponseId],
     queryFn: () => formulariosApi.getResponse(openResponseId!),
     enabled: !!openResponseId,
+    retry: false,
   });
 
   return (
@@ -89,8 +93,8 @@ export function FormularioRespuestasPage() {
       <Card sx={{ p: 3 }}>
         <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
           <Typography variant="h5">Respuestas: {form?.nombre ?? '…'}</Typography>
-          <Link component={RouterLink} to="/formularios">
-            Volver a formularios
+          <Link component={RouterLink} to="/agenda">
+            Volver a agenda
           </Link>
         </Stack>
 
@@ -138,12 +142,23 @@ export function FormularioRespuestasPage() {
       <Dialog open={!!openResponseId} onClose={() => setOpenResponseId(null)} maxWidth="sm" fullWidth>
         <DialogTitle>Respuesta</DialogTitle>
         <DialogContent>
-          {!responseDetail ? (
+          {isResponseError ? (
+            <Typography color="error" sx={{ py: 2 }}>
+              No tienes permiso para ver esta respuesta.
+            </Typography>
+          ) : !responseDetail ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress size={28} />
             </Box>
           ) : (
             <Stack spacing={2} sx={{ mt: 1 }}>
+              <Box sx={{ pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="body2" color="text.secondary">
+                  {new Date(responseDetail.createdAt).toLocaleString()} ·{' '}
+                  {responseDetail.centroNombre ?? 'Sin centro'} ·{' '}
+                  {responseDetail.creadoPorNombre}
+                </Typography>
+              </Box>
               {responseDetail.valores.map((valor) => (
                 <Box key={valor.campoId}>
                   <Typography variant="subtitle2">{valor.campoEtiqueta}</Typography>

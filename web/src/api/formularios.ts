@@ -91,6 +91,10 @@ export interface FormResponseDetail extends FormResponseSummary {
   valores: FormResponseValue[];
 }
 
+export interface FormResponseWithForm extends FormResponseSummary {
+  formNombre: string;
+}
+
 export interface FormResponseValueInput {
   campoId: string;
   valorTexto?: string;
@@ -145,6 +149,12 @@ export const formulariosApi = {
 
   listResponses: (formId: string) =>
     http.get<FormResponseSummary[]>(`/formularios/${formId}/respuestas`).then((r) => r.data),
+
+  /** Todas las respuestas enviadas del tenant, de cualquier formulario — para Agenda. */
+  listAllResponses: (filter: { centroId?: string } = {}) =>
+    http
+      .get<FormResponseWithForm[]>('/formularios/respuestas', { params: filter })
+      .then((r) => r.data),
 
   getResponse: (id: string) =>
     http.get<FormResponseDetail>(`/formularios/respuestas/${id}`).then((r) => r.data),

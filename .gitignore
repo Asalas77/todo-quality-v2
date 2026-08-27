@@ -4,6 +4,7 @@ build/
 
 .env
 .env.local
+.env.prod
 
 api/uploads/
 

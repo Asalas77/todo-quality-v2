@@ -1,0 +1,72 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      POSTGRES_DB: todoquality
+    volumes:
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+      - todoquality_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d todoquality']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: todo_quality_app
+      DB_PASSWORD: ${APP_DB_PASSWORD}
+      DB_NAME: todoquality
+      JWT_SECRET: ${JWT_SECRET}
+      ACCESS_TOKEN_TTL_SECONDS: 900
+      REFRESH_TOKEN_TTL_DAYS: 30
+      PORT: 4000
+      CORS_ORIGIN: https://${DOMAIN}
+      COOKIE_CROSS_SITE: 'false'
+      UPLOADS_DIR: /app/uploads
+      FRONTEND_URL: https://${DOMAIN}
+      NODE_ENV: production
+    volumes:
+      - uploads_data:/app/uploads
+
+  web:
+    build:
+      context: ./web
+      args:
+        VITE_API_URL: https://${DOMAIN}/api
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    # Reintenta la renovación cada 12h; certbot no renueva si el certificado todavía
+    # tiene más de 30 días de vida, así que este loop es barato y seguro de dejar corriendo.
+    entrypoint: >
+      /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $${!}; done"
+
+volumes:
+  todoquality_data:
+  uploads_data:
+  certbot_conf:
+  certbot_www:

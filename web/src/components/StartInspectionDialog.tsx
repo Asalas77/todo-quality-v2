@@ -12,12 +12,16 @@ import {
   DialogTitle,
   FormControl,
   InputLabel,
+  ListItemIcon,
+  ListItemText,
   ListSubheader,
   MenuItem,
   Select,
   Stack,
   TextField,
 } from '@mui/material';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import DescriptionIcon from '@mui/icons-material/Description';
 import { AxiosError } from 'axios';
 import { centrosApi } from '../api/centros';
 import type { Centro } from '../api/centros';
@@ -133,13 +137,19 @@ export function StartInspectionDialog({
                 {templates.length > 0 && <ListSubheader>Checklists</ListSubheader>}
                 {templates.map((t) => (
                   <MenuItem key={t.id} value={`CHECKLIST:${t.id}`}>
-                    {t.identificador} — {t.nombre}
+                    <ListItemIcon>
+                      <AssignmentIcon fontSize="small" color="primary" />
+                    </ListItemIcon>
+                    <ListItemText primary={`${t.identificador} — ${t.nombre}`} />
                   </MenuItem>
                 ))}
                 {forms.length > 0 && <ListSubheader>Formularios</ListSubheader>}
                 {forms.map((f) => (
                   <MenuItem key={f.id} value={`FORMULARIO:${f.id}`}>
-                    {f.identificador} — {f.nombre}
+                    <ListItemIcon>
+                      <DescriptionIcon fontSize="small" color="secondary" />
+                    </ListItemIcon>
+                    <ListItemText primary={`${f.identificador} — ${f.nombre}`} />
                   </MenuItem>
                 ))}
               </Select>

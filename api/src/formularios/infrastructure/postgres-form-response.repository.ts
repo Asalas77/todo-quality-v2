@@ -5,6 +5,9 @@ import {
   FormResponseRepositoryPort,
   FormResponseSummary,
   FormResponseValue,
+  FormResponseWithForm,
+  ListAllFormResponsesFilter,
+  ListFormResponsesFilter,
   SubmitFormResponseInput,
 } from '../domain/ports/form-response-repository.port';
 import { TenantTransaction } from '../../shared/tenant/tenant-transaction';
@@ -14,6 +17,7 @@ interface ResponseRow {
   form_id: string;
   centro_id: string | null;
   centro_nombre: string | null;
+  creado_por: string;
   creado_por_nombre: string;
   estado: FormResponseSummary['estado'];
   created_at: Date;
@@ -36,6 +40,7 @@ function toSummary(row: ResponseRow): FormResponseSummary {
     formId: row.form_id,
     centroId: row.centro_id,
     centroNombre: row.centro_nombre,
+    creadoPor: row.creado_por,
     creadoPorNombre: row.creado_por_nombre,
     estado: row.estado,
     createdAt: row.created_at,
@@ -57,7 +62,8 @@ function toValue(row: ValueRow): FormResponseValue {
 
 const RESPONSE_SELECT = `
   SELECT r.id, r.form_id, r.centro_id, c.nombre AS centro_nombre,
-         u.nombre || ' ' || u.apellido AS creado_por_nombre, r.estado, r.created_at, r.updated_at
+         r.creado_por, u.nombre || ' ' || u.apellido AS creado_por_nombre,
+         r.estado, r.created_at, r.updated_at
   FROM formulario_respuesta r
   LEFT JOIN centro c ON c.id = r.centro_id
   JOIN app_user u ON u.id = r.creado_por
@@ -159,14 +165,55 @@ export class PostgresFormResponseRepository implements FormResponseRepositoryPor
     });
   }
 
-  async findByForm(formId: string): Promise<FormResponseSummary[]> {
+  async findByForm(
+    formId: string,
+    filter: ListFormResponsesFilter = {},
+  ): Promise<FormResponseSummary[]> {
+    const params: unknown[] = [formId];
+    let where = `r.form_id = $1 AND r.estado = 'ENVIADA'`;
+    if (filter.creadoPor) {
+      params.push(filter.creadoPor);
+      where += ` AND r.creado_por = $${params.length}`;
+    }
+
     const rows = await this.tx.run((manager) =>
       manager.query<ResponseRow[]>(
-        `${RESPONSE_SELECT} WHERE r.form_id = $1 AND r.estado = 'ENVIADA' ORDER BY r.created_at DESC`,
-        [formId],
+        `${RESPONSE_SELECT} WHERE ${where} ORDER BY r.created_at DESC`,
+        params,
       ),
     );
     return rows.map(toSummary);
+  }
+
+  async findAllSubmitted(
+    filter: ListAllFormResponsesFilter = {},
+  ): Promise<FormResponseWithForm[]> {
+    const params: unknown[] = [];
+    const conditions = [`r.estado = 'ENVIADA'`];
+    if (filter.centroId) {
+      params.push(filter.centroId);
+      conditions.push(`r.centro_id = $${params.length}`);
+    }
+    if (filter.creadoPor) {
+      params.push(filter.creadoPor);
+      conditions.push(`r.creado_por = $${params.length}`);
+    }
+
+    const rows = await this.tx.run((manager) =>
+      manager.query<Array<ResponseRow & { form_nombre: string }>>(
+        `SELECT r.id, r.form_id, f.nombre AS form_nombre, r.centro_id, c.nombre AS centro_nombre,
+                r.creado_por, u.nombre || ' ' || u.apellido AS creado_por_nombre,
+                r.estado, r.created_at, r.updated_at
+         FROM formulario_respuesta r
+         JOIN formulario f ON f.id = r.form_id
+         LEFT JOIN centro c ON c.id = r.centro_id
+         JOIN app_user u ON u.id = r.creado_por
+         WHERE ${conditions.join(' AND ')}
+         ORDER BY r.created_at DESC`,
+        params,
+      ),
+    );
+    return rows.map((row) => ({ ...toSummary(row), formNombre: row.form_nombre }));
   }
 
   async findById(id: string, manager?: EntityManager): Promise<FormResponseDetail | null> {

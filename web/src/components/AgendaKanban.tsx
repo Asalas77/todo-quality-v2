@@ -4,14 +4,16 @@ import { Box, Card, CardContent, Chip, Stack, Typography } from '@mui/material';
 import { ESTADO_LABEL } from '../api/inspecciones';
 import type { InspectionStatus, InspectionSummary } from '../api/inspecciones';
 import type { Schedule } from '../api/agenda';
+import type { FormResponseWithForm } from '../api/formularios';
 
-type Column = 'PENDIENTE' | InspectionStatus;
+type Column = 'PENDIENTE' | InspectionStatus | 'FORMULARIO';
 
-const COLUMN_ORDER: Column[] = ['PENDIENTE', 'BORRADOR', 'NO_CONFORME', 'CONFORME'];
+const COLUMN_ORDER: Column[] = ['PENDIENTE', 'BORRADOR', 'NO_CONFORME', 'CONFORME', 'FORMULARIO'];
 
 const COLUMN_LABEL: Record<Column, string> = {
   PENDIENTE: 'Pendiente',
   ...ESTADO_LABEL,
+  FORMULARIO: 'Formularios',
 };
 
 const COLUMN_COLOR: Record<Column, string> = {
@@ -19,15 +21,22 @@ const COLUMN_COLOR: Record<Column, string> = {
   BORRADOR: '#757575',
   NO_CONFORME: '#c62828',
   CONFORME: '#2e7d32',
+  FORMULARIO: '#f97316',
 };
 
 interface AgendaKanbanProps {
   pendingSchedule: Schedule[];
   inspections: InspectionSummary[];
+  formResponses: FormResponseWithForm[];
   onStartSchedule: (item: Schedule) => void;
 }
 
-export function AgendaKanban({ pendingSchedule, inspections, onStartSchedule }: AgendaKanbanProps) {
+export function AgendaKanban({
+  pendingSchedule,
+  inspections,
+  formResponses,
+  onStartSchedule,
+}: AgendaKanbanProps) {
   const navigate = useNavigate();
 
   const byColumn = useMemo(() => {
@@ -53,14 +62,22 @@ export function AgendaKanban({ pendingSchedule, inspections, onStartSchedule }: 
         onClick: () => navigate(`/inspecciones/${inspection.id}`),
       });
     }
+    for (const response of formResponses) {
+      map.get('FORMULARIO')?.push({
+        key: response.id,
+        title: response.formNombre,
+        subtitle: `${response.centroNombre ?? 'Sin centro'} · ${response.createdAt.slice(0, 10)} · ${response.creadoPorNombre}`,
+        onClick: () => navigate(`/formularios/${response.formId}/respuestas?responseId=${response.id}`),
+      });
+    }
     return map;
-  }, [pendingSchedule, inspections, navigate, onStartSchedule]);
+  }, [pendingSchedule, inspections, formResponses, navigate, onStartSchedule]);
 
   return (
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(5, 1fr)' },
         gap: 2,
         alignItems: 'flex-start',
       }}
@@ -103,7 +120,7 @@ export function AgendaKanban({ pendingSchedule, inspections, onStartSchedule }: 
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
                       {item.title}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" display="block">
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                       {item.subtitle}
                     </Typography>
                   </CardContent>
