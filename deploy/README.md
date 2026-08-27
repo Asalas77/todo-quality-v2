@@ -12,6 +12,21 @@ cuando no superes los límites del tier (esta app no se acerca ni de lejos).
      (el tier Always Free te da hasta 4 OCPU / 24 GB en total entre todas tus instancias A1;
      con 1 OCPU/6GB sobra para esta app y dejas margen para más adelante).
      Debe decir "Always Free eligible" al lado.
+
+   > **Si aparece "Out of host capacity"** — es el problema más común del tier gratuito, no
+   > es un error tuyo: las máquinas Ampere están muy demandadas y Oracle no siempre tiene
+   > libres. Opciones, en orden:
+   > 1. Cambiar el **Availability Domain** (AD-1 / AD-2 / AD-3) en el mismo asistente y reintentar.
+   > 2. Reintentar más tarde — la disponibilidad va rotando durante el día.
+   > 3. Usar el shape **VM.Standard.E2.1.Micro** (AMD), que también es Always Free y casi
+   >    siempre está disponible. **Ojo**: solo trae 1 OCPU y 1 GB de RAM. La app corre, pero
+   >    construir la imagen del frontend ahí se queda sin memoria. Si terminas en este shape,
+   >    agrégale swap antes de construir:
+   >    ```bash
+   >    sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile
+   >    sudo mkswap /swapfile && sudo swapon /swapfile
+   >    echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+   >    ```
 3. **Networking**: deja la VCN por defecto que Oracle ofrece crear (ya trae un Internet
    Gateway). Que quede marcado "Assign a public IPv4 address".
 4. **Add SSH keys**: sube tu llave pública (el archivo `.pub` de las llaves que ya

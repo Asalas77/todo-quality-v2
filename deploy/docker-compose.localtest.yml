@@ -52,4 +52,7 @@ services:
     ports:
       - '8099:80'
     volumes:
-      - ./nginx.localtest.conf:/etc/nginx/conf.d/default.conf:ro
+      # Se monta el template (no conf.d/default.conf directamente): el entrypoint de la
+      # imagen nginx corre envsubst sobre /etc/nginx/templates/*.template y escribe el
+      # resultado en conf.d — montar el destino como :ro haría fallar ese paso.
+      - ./nginx.localtest.conf:/etc/nginx/templates/default.conf.template:ro

@@ -1,0 +1,75 @@
+# Blueprint de Render para desplegar Kontrol gratis, solo para pruebas.
+# En render.com: New -> Blueprint -> selecciona este repo -> Render lee este archivo
+# y crea los 3 servicios automáticamente.
+#
+# Notas sobre el free tier de Render:
+# - Web Service (api): "duerme" tras ~15 min sin tráfico; la siguiente petición tarda
+#   unos segundos en despertarlo. Normal y gratis siempre.
+# - Static Site (web): nunca duerme, siempre gratis, con HTTPS y dominio *.onrender.com.
+# - PostgreSQL free: se borra automáticamente a los 30 días de creada. Sirve perfecto
+#   para pruebas; si el proyecto sigue vivo pasado ese plazo, hay que recrearla (o
+#   pasar a un Postgres gratuito sin caducidad, como Neon, y apuntar DB_HOST ahí).
+
+databases:
+  - name: kontrol-db
+    plan: free
+    databaseName: todoquality
+    user: todo_quality_app
+
+services:
+  - type: web
+    name: kontrol-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: ./api
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: kontrol-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: kontrol-db
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: kontrol-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: kontrol-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: kontrol-db
+          property: database
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ACCESS_TOKEN_TTL_SECONDS
+        value: 900
+      - key: REFRESH_TOKEN_TTL_DAYS
+        value: 30
+      - key: NODE_ENV
+        value: production
+      - key: COOKIE_CROSS_SITE
+        value: 'true'
+      - key: UPLOADS_DIR
+        value: /app/uploads
+      - key: CORS_ORIGIN
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+
+  - type: web
+    name: kontrol-web
+    runtime: static
+    buildCommand: cd web && npm ci && npm run build
+    staticPublishPath: web/dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
