@@ -11,6 +11,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
 import { RolesModule } from './roles/roles.module';
 import { ReportesModule } from './reportes/reportes.module';
 import { FormulariosModule } from './formularios/formularios.module';
+import { ComentariosModule } from './comentarios/comentarios.module';
 import { SharedModule } from './shared/shared.module';
 import { JwtAuthGuard } from './auth/infrastructure/guards/jwt-auth.guard';
 import { PermissionsGuard } from './auth/infrastructure/guards/permissions.guard';
@@ -47,6 +48,7 @@ import { PermissionsGuard } from './auth/infrastructure/guards/permissions.guard
     RolesModule,
     ReportesModule,
     FormulariosModule,
+    ComentariosModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

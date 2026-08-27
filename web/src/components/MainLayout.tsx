@@ -26,6 +26,7 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import PeopleIcon from '@mui/icons-material/People';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import ForumIcon from '@mui/icons-material/Forum';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
 import LightModeIcon from '@mui/icons-material/LightMode';
@@ -43,6 +44,7 @@ const NAV_ITEMS = [
   { to: '/reportes', label: 'Reportes', icon: BarChartIcon, permission: 'reportes.ver' },
   { to: '/usuarios', label: 'Usuarios', icon: PeopleIcon, permission: 'usuarios.ver' },
   { to: '/roles', label: 'Roles', icon: AdminPanelSettingsIcon, permission: 'roles.gestionar' },
+  { to: '/comentarios', label: 'Comentarios', icon: ForumIcon, permission: 'usuarios.gestionar' },
 ] as const;
 
 export function MainLayout({ children }: { children: ReactNode }) {

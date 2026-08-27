@@ -46,6 +46,23 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
+      # Correo de aviso al recibir un comentario en "Soporte y comentarios". Sin
+      # SMTP_HOST el comentario igual se guarda, solo no se envía el correo (ver
+      # SmtpEmailNotifier). SMTP_USER/SMTP_PASS se completan a mano en el dashboard.
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_SECURE
+        value: 'false'
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        value: 'Kontrol <kontrolcalidadasalas@gmail.com>'
+      - key: SUPPORT_EMAIL_TO
+        value: kontrolcalidadasalas@gmail.com
 
   - type: web
     name: kontrol-web

@@ -15,6 +15,7 @@ import { CompletarInspeccionPage } from './pages/CompletarInspeccionPage';
 import { AgendaPage } from './pages/AgendaPage';
 import { UsuariosPage } from './pages/UsuariosPage';
 import { RolesPage } from './pages/RolesPage';
+import { ComentariosPage } from './pages/ComentariosPage';
 import { ReportesPage } from './pages/ReportesPage';
 import { OlvideContrasenaPage } from './pages/OlvideContrasenaPage';
 import { RestablecerContrasenaPage } from './pages/RestablecerContrasenaPage';
@@ -193,6 +194,14 @@ function AppShell() {
                 element={
                   <ProtectedRoute>
                     <RolesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/comentarios"
+                element={
+                  <ProtectedRoute>
+                    <ComentariosPage />
                   </ProtectedRoute>
                 }
               />
