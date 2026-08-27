@@ -526,6 +526,14 @@
     border-right: 1px dashed var(--line);
   }
   .step:last-child { border-right: none; padding-right: 0; }
+  .step-photo {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 12px;
+    margin-bottom: 18px;
+    display: block;
+  }
   .step-n {
     font-family: "IBM Plex Mono", monospace;
     font-size: 13px;
@@ -921,16 +929,19 @@
 
       <div class="steps reveal">
         <div class="step">
+          <img class="step-photo" src="images/step-01-plantillas.jpg" alt="Persona completando una plantilla de checklist en un portapapeles" loading="lazy">
           <div class="step-n mono">01</div>
           <h3>Configura tus plantillas</h3>
           <p>Defines los centros de tu empresa y el checklist de cada tipo de inspección: qué se revisa y con qué criticidad.</p>
         </div>
         <div class="step">
+          <img class="step-photo" src="images/step-02-inspecciona.jpg" alt="Inspector en terreno revisando un equipo con herramientas" loading="lazy">
           <div class="step-n mono">02</div>
           <h3>Tu equipo inspecciona</h3>
           <p>Desde el celular, en terreno: responden cada ítem, agregan foto de evidencia y, si algo no cumple, un plan de acción con fecha y responsable.</p>
         </div>
         <div class="step">
+          <img class="step-photo" src="images/step-03-estado.jpg" alt="Panel con métricas y puntaje de calidad en tiempo real" loading="lazy">
           <div class="step-n mono">03</div>
           <h3>Tú ves el estado real</h3>
           <p>Calendario, Kanban y reportes se actualizan solos — el estado de cada inspección se calcula desde las respuestas, no se declara a mano.</p>
